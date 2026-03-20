@@ -168,7 +168,13 @@ jobs:
             PROVISIONING_PROFILE_SPECIFIER="" \
             DEVELOPMENT_TEAM="" \
             AD_HOC_CODE_SIGNING_ALLOWED=YES \
-            | xcpretty --color
+            2>&1 | tee /tmp/build.log
+          STATUS=${PIPESTATUS[0]}
+          if [ $STATUS -ne 0 ]; then
+            echo "--- FULL ERROR ---"
+            grep -A 5 "Undefined\|error:" /tmp/build.log || cat /tmp/build.log | tail -50
+            exit $STATUS
+          fi
           echo "Archive complete"
 
       - name: Package unsigned IPA
