@@ -1,0 +1,246 @@
+name: Paradise IDE - Build and Package IPA
+
+on:
+  push:
+    branches: [main, release/*]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  XCODE_VERSION: "15.2"
+  SCHEME: "ParadiseIDE"
+
+jobs:
+
+  # JOB 1 - Verify Python server + paradise modules
+  verify-server:
+    name: Verify Python Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install server dependencies
+        run: pip install --quiet -r src/server/requirements.txt
+
+      - name: Check syntax - all modules
+        run: |
+          python3 - << 'PYCHECK'
+          import ast, sys
+          from pathlib import Path
+          files = list(Path("src/server").rglob("*.py"))
+          errors = []
+          for f in sorted(files):
+              try:
+                  ast.parse(f.read_text())
+                  print(f"  OK: {f}")
+              except SyntaxError as e:
+                  print(f"  ERR: {f}: {e}")
+                  errors.append(f)
+          if errors:
+              sys.exit(1)
+          print(f"\nAll {len(files)} Python files OK")
+          PYCHECK
+
+      - name: Lint with ruff
+        run: |
+          pip install --quiet ruff
+          ruff check src/server/ --ignore E501,E402 || true
+
+      - name: Verify paradise package imports
+        run: |
+          cd src/server
+          python3 -c "
+          from paradise import Downloader, PackageInstaller, ProcessManager, FileManager, PythonREPL
+          print('All paradise modules import OK')
+          "
+
+      - name: Build server Docker image
+        run: |
+          docker build \
+            -f src/server/Dockerfile \
+            -t paradise-ide-server:latest \
+            src/server/
+          echo "Server image built"
+
+  # JOB 2 - Generate Xcode project
+  generate-project:
+    name: Generate Xcode Project
+    runs-on: macos-14
+    needs: verify-server
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Show repo contents and locate project.yaml
+        run: |
+          echo "--- root ---"
+          ls -la
+          echo "--- project.yaml location ---"
+          find . -name "project.yaml" | sort
+          echo "--- swift files ---"
+          find . -name "*.swift" | sort
+
+      - name: Generate .xcodeproj
+        run: |
+          SPEC=$(find . -maxdepth 3 -name "project.yaml" | head -1)
+          if [ -z "$SPEC" ]; then echo "ERROR: project.yaml not found" && exit 1; fi
+          echo "Using spec: $SPEC"
+          xcodegen generate --spec "$SPEC" --project .
+          echo "Generated ParadiseIDE.xcodeproj"
+          ls -la ParadiseIDE.xcodeproj/
+
+      - name: Confirm Info.plist was generated
+        run: |
+          [ -f ParadiseIDE/Info.plist ] \
+            || (echo "Info.plist missing" && exit 1)
+          echo "Info.plist present"
+
+      - name: Upload xcodeproj and Info.plist
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodeproj
+          path: |
+            ParadiseIDE.xcodeproj/
+            ParadiseIDE/Info.plist
+          retention-days: 1
+
+  # JOB 3 - Build archive, package IPA, upload
+  build-ipa:
+    name: Build and Package IPA
+    runs-on: macos-14
+    needs: generate-project
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+
+      - name: Download xcodeproj and Info.plist
+        uses: actions/download-artifact@v4
+        with:
+          name: xcodeproj
+
+      - name: Confirm files present
+        run: |
+          [ -f ParadiseIDE/Info.plist ] \
+            || (echo "Info.plist missing after download" && exit 1)
+          [ -d ParadiseIDE.xcodeproj ] \
+            || (echo "xcodeproj missing after download" && exit 1)
+          echo "xcodeproj and Info.plist confirmed"
+
+      - name: Install xcpretty
+        run: gem install xcpretty --no-document --quiet
+
+      - name: Build archive (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project ParadiseIDE.xcodeproj \
+            -scheme "${{ env.SCHEME }}" \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath "${{ runner.temp }}/ParadiseIDE.xcarchive" \
+            SKIP_INSTALL=NO \
+            BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            DEVELOPMENT_TEAM="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            | xcpretty --color
+          echo "Archive complete"
+
+      - name: Package unsigned IPA
+        run: |
+          ARCHIVE="${{ runner.temp }}/ParadiseIDE.xcarchive"
+
+          [ -d "$ARCHIVE" ] \
+            || (echo "Archive missing" && ls "${{ runner.temp }}/" && exit 1)
+
+          APP_PATH=$(find "$ARCHIVE" -name "*.app" | head -1)
+
+          [ -n "$APP_PATH" ] \
+            || (echo "No .app in archive" && find "$ARCHIVE" -type d && exit 1)
+
+          echo "Packaging: $APP_PATH"
+          mkdir -p "${{ runner.temp }}/ipa_work/Payload"
+          cp -r "$APP_PATH" "${{ runner.temp }}/ipa_work/Payload/"
+
+          cd "${{ runner.temp }}/ipa_work"
+          zip -r "${{ runner.temp }}/ParadiseIDE-unsigned.ipa" Payload/ \
+            -x "*.DS_Store"
+
+          echo "IPA ready:"
+          ls -lh "${{ runner.temp }}/ParadiseIDE-unsigned.ipa"
+
+      - name: Verify IPA structure
+        run: |
+          unzip -l "${{ runner.temp }}/ParadiseIDE-unsigned.ipa" | head -25
+          echo "Size: $(du -sh "${{ runner.temp }}/ParadiseIDE-unsigned.ipa" | cut -f1)"
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: ParadiseIDE-unsigned-${{ github.run_number }}
+          path: ${{ runner.temp }}/ParadiseIDE-unsigned.ipa
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload dSYMs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ParadiseIDE-dSYMs-${{ github.run_number }}
+          path: ${{ runner.temp }}/ParadiseIDE.xcarchive/dSYMs/
+          retention-days: 30
+          if-no-files-found: warn
+
+  # JOB 4 - Summary
+  summary:
+    name: Summary
+    runs-on: ubuntu-latest
+    needs: [verify-server, generate-project, build-ipa]
+    if: always()
+
+    steps:
+      - name: Print summary
+        run: |
+          echo "=============================================="
+          echo "  Paradise IDE - Build Summary"
+          echo "=============================================="
+          echo "  Server check  : ${{ needs.verify-server.result }}"
+          echo "  XcodeGen      : ${{ needs.generate-project.result }}"
+          echo "  IPA build     : ${{ needs.build-ipa.result }}"
+          echo "----------------------------------------------"
+          echo "  Run    : #${{ github.run_number }}"
+          echo "  Commit : ${{ github.sha }}"
+          echo "  Branch : ${{ github.ref_name }}"
+          echo "=============================================="
+          if [ "${{ needs.build-ipa.result }}" = "success" ]; then
+            echo "  Artifact: ParadiseIDE-unsigned-${{ github.run_number }}.ipa"
+            echo "  Download: Actions -> this run -> Artifacts"
+            echo "  Done!"
+          else
+            echo "  Build failed - check logs above"
+            exit 1
+          fi

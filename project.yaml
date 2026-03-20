@@ -1,0 +1,85 @@
+name: ParadiseIDE
+
+options:
+  bundleIdPrefix: com.paradise
+  deploymentTarget:
+    iOS: "16.0"
+  xcodeVersion: "15.2"
+  createIntermediateGroups: true
+  developmentLanguage: en
+
+settings:
+  base:
+    PRODUCT_NAME: Paradise IDE
+    MARKETING_VERSION: "1.1.0"
+    CURRENT_PROJECT_VERSION: "2"
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    ENABLE_BITCODE: NO
+    SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+
+targets:
+  ParadiseIDE:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: ParadiseIDE
+        excludes:
+          - "**/.DS_Store"
+          - "**/Info.plist"
+    info:
+      path: ParadiseIDE/Info.plist
+      properties:
+        CFBundleDisplayName: Paradise IDE
+        CFBundleIdentifier: com.paradise.ide
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundlePackageType: APPL
+        CFBundleExecutable: "$(EXECUTABLE_NAME)"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIRequiresFullScreen: false
+        UIApplicationSupportsIndirectInputEvents: true
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+          NSExceptionDomains:
+            localhost:
+              NSExceptionAllowsInsecureHTTPLoads: true
+              NSIncludesSubdomains: false
+        NSMicrophoneUsageDescription: Used for ambient sound features
+        NSLocalNetworkUsageDescription: Paradise IDE connects to your local Python server for terminal execution.
+        NSBonjourServices:
+          - "_paradise._tcp"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.paradise.ide
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGN_IDENTITY: ""
+        PROVISIONING_PROFILE_SPECIFIER: ""
+        DEVELOPMENT_TEAM: ""
+
+schemes:
+  ParadiseIDE:
+    build:
+      targets:
+        ParadiseIDE: all
+    run:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
