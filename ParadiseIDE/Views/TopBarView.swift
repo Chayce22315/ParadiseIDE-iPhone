@@ -12,7 +12,7 @@ var t: ParadiseTheme { vm.theme }
 
 var body: some View {
     HStack(spacing: 12) {
-        // Sidebar toggle
+
         Button {
             withAnimation { sidebarVisible.toggle() }
         } label: {
@@ -22,10 +22,7 @@ var body: some View {
         }
         .buttonStyle(.plain)
 
-        // Logo
         HStack(spacing: 6) {
-            Text("☮️")
-                .font(.system(size: 16))
             Text("Paradise IDE")
                 .font(.system(size: 14, weight: .medium, design: .serif))
                 .italic()
@@ -33,7 +30,6 @@ var body: some View {
                 .tracking(0.5)
         }
 
-        // Current folder indicator
         Button {
             showFolderPicker = true
         } label: {
@@ -65,17 +61,15 @@ var body: some View {
 
         Spacer()
 
-        // Edition picker
         HStack(spacing: 4) {
             ForEach(IDEEdition.allCases, id: \.self) { ed in
                 Button {
                     vm.edition = ed
                 } label: {
-                    Text(ed.rawValue + (ed == .enterprise ? " 💎" : ""))
+                    Text(ed.rawValue + (ed == .enterprise ? " D" : ""))
                         .font(.system(size: 10, design: .monospaced))
                         .foregroundColor(vm.edition == ed ? t.accent : t.mutedColor)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
+                        .padding(.horizontal, 10).padding(.vertical, 4)
                         .background(
                             RoundedRectangle(cornerRadius: 20)
                                 .fill(vm.edition == ed ? t.accent.opacity(0.15) : Color.clear)
@@ -89,7 +83,6 @@ var body: some View {
             }
         }
 
-        // Theme color dots
         HStack(spacing: 4) {
             Text("THEME")
                 .font(.system(size: 9, design: .monospaced))
@@ -118,15 +111,13 @@ var body: some View {
             }
         }
 
-        // Perf mode
         Button {
             vm.performanceMode.toggle()
         } label: {
-            Text("⚡ PERF")
+            Text("PERF")
                 .font(.system(size: 10, design: .monospaced))
                 .foregroundColor(vm.performanceMode ? t.accent : t.mutedColor)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
+                .padding(.horizontal, 10).padding(.vertical, 4)
                 .background(
                     RoundedRectangle(cornerRadius: 20)
                         .fill(vm.performanceMode ? t.accent.opacity(0.15) : Color.clear)
@@ -137,17 +128,14 @@ var body: some View {
                 )
         }
         .buttonStyle(.plain)
-    }
 
-        // Terminal toggle
         Button {
             withAnimation { terminalVisible.toggle() }
         } label: {
-            Text("🖥️ TERM")
+            Text("TERM")
                 .font(.system(size: 10, design: .monospaced))
                 .foregroundColor(terminalVisible ? t.accent : t.mutedColor)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
+                .padding(.horizontal, 10).padding(.vertical, 4)
                 .background(
                     RoundedRectangle(cornerRadius: 20)
                         .fill(terminalVisible ? t.accent.opacity(0.15) : Color.clear)
@@ -158,6 +146,7 @@ var body: some View {
                 )
         }
         .buttonStyle(.plain)
+    }
     .padding(.horizontal, 14)
     .frame(height: 46)
     .background(

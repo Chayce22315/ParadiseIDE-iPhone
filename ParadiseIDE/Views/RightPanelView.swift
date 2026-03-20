@@ -10,7 +10,6 @@ var body: some View {
     ScrollView {
         VStack(alignment: .leading, spacing: 18) {
 
-            // Current folder
             PanelSection(title: "PROJECT FOLDER") {
                 VStack(alignment: .leading, spacing: 6) {
                     if let url = folderManager.currentFolderURL {
@@ -41,13 +40,11 @@ var body: some View {
                 }
             }
 
-            // Exports / Documents browser
             PanelSection(title: "EXPORTS & FILES") {
                 DocumentsBrowserView(folderManager: folderManager, theme: t)
                     .frame(minHeight: 120)
             }
 
-            // AI Co-pilot
             PanelSection(title: "AI CO-PILOT") {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("AI Active & watching")
@@ -67,7 +64,6 @@ var body: some View {
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(t.surfaceBorder, lineWidth: 1))
             }
 
-            // Build targets
             PanelSection(title: "BUILD TARGETS") {
                 VStack(spacing: 4) {
                     ForEach(["Windows", "macOS", "Android", "iOS"], id: \.self) { p in
@@ -83,7 +79,6 @@ var body: some View {
                 }
             }
 
-            // Edition
             PanelSection(title: "EDITION") {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("\(vm.edition.badge) \(vm.edition.rawValue)")
@@ -100,7 +95,6 @@ var body: some View {
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(t.surfaceBorder, lineWidth: 1))
             }
 
-            // Session stats
             PanelSection(title: "SESSION") {
                 VStack(alignment: .leading, spacing: 4) {
                     StatRow(label: "Lines", value: "\(vm.lineCount)", theme: vm.theme)
@@ -118,10 +112,6 @@ var body: some View {
 ```
 
 }
-
-}
-
-// MARK: - Helper views
 
 struct PanelSection<Content: View>: View {
 @EnvironmentObject var vm: EditorViewModel
