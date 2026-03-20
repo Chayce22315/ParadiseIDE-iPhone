@@ -60,6 +60,8 @@ targets:
         NSLocalNetworkUsageDescription: Paradise IDE connects to your local Python server for terminal execution.
         NSBonjourServices:
           - "_paradise._tcp"
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.paradise.ide
