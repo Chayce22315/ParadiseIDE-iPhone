@@ -7,26 +7,20 @@ struct StatusBarView: View {
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
-        HStack(spacing: 18) {
-            Text("☮️ \(vm.edition.rawValue)")
-            Text("🌴 \(t.name)")
-            Text("Ln \(vm.lineCount)")
-            Text("Col \(vm.column)")
-            Text("\(t.petEmoji) Pet: Active")
-            Text("✦ Flow State")
+        HStack(spacing: 16) {
+            if let tab = vm.activeTab {
+                Text(tab.name).font(.system(size: 10, design: .monospaced)).foregroundColor(t.mutedColor)
+                Text(tab.language.uppercased()).font(.system(size: 10, design: .monospaced)).foregroundColor(t.mutedColor)
+            }
+            Text("Ln \(vm.lineCount)").font(.system(size: 10, design: .monospaced)).foregroundColor(t.mutedColor)
+            Text(t.petEmoji)
             Spacer()
+            Text("Paradise IDE").font(.system(size: 10, design: .monospaced)).foregroundColor(t.mutedColor)
         }
-        .font(.system(size: 10, design: .monospaced))
-        .foregroundColor(t.mutedColor)
-        .padding(.horizontal, 14)
-        .frame(height: 26)
-        .background(t.accent.opacity(0.12))
-        .overlay(
-            Rectangle()
-                .frame(height: 1)
-                .foregroundColor(t.surfaceBorder),
-            alignment: .top
-        )
+        .padding(.horizontal, 12)
+        .frame(height: 24)
+        .background(t.accent.opacity(0.10))
+        .overlay(Rectangle().frame(height: 1).foregroundColor(t.surfaceBorder), alignment: .top)
     }
 }
 
@@ -40,46 +34,23 @@ struct ErrorToastView: View {
         VStack {
             Spacer()
             HStack(spacing: 12) {
-                Text("📩")
-                    .font(.system(size: 20))
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("PARADISE TOOLS")
-                        .font(.system(size: 9, design: .monospaced))
-                        .foregroundColor(t.mutedColor)
-                        .tracking(1)
-                    Text("Hey! No stress — looks like a small typo. Try adding a semicolon? 🌴")
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundColor(t.textColor)
-                        .lineSpacing(3)
+                Image(systemName: "envelope").font(.system(size: 18)).foregroundColor(t.accent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("PARADISE TOOLS").font(.system(size: 9, design: .monospaced)).foregroundColor(t.mutedColor)
+                    Text("No stress! Looks like a small issue. The AI can help fix it.").font(.system(size: 12, design: .monospaced)).foregroundColor(t.textColor)
                 }
-
                 Spacer()
-
                 Button {
                     vm.showErrorToast = false
                     vm.petMood = .idle
                 } label: {
-                    Image(systemName: "xmark")
-                        .foregroundColor(t.mutedColor)
-                        .font(.system(size: 13, weight: .medium))
-                }
-                .buttonStyle(.plain)
+                    Image(systemName: "xmark").foregroundColor(t.mutedColor).font(.system(size: 12))
+                }.buttonStyle(.plain)
             }
-            .padding(16)
-            .frame(maxWidth: 460)
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(t.surface)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
-                    .shadow(color: t.accent.opacity(0.3), radius: 24, x: 0, y: 8)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(t.accent.opacity(0.4), lineWidth: 1)
-            )
-            .padding(.bottom, 36)
-            .padding(.horizontal, 20)
+            .padding(14)
+            .background(RoundedRectangle(cornerRadius: 14).fill(t.surface).background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14)).shadow(color: t.accent.opacity(0.25), radius: 20))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(t.accent.opacity(0.3), lineWidth: 1))
+            .padding(.horizontal, 16).padding(.bottom, 32)
         }
     }
 }
@@ -99,16 +70,13 @@ struct ParticleLayerView: View {
                         x: geo.size.width * (0.10 + Double(i) * 0.18 + Double(i % 2) * 0.08),
                         y: geo.size.height * (0.05 + Double(i % 4) * 0.22)
                     )
-                    .opacity(0.12 + Double(i % 3) * 0.05)
+                    .opacity(0.10 + Double(i % 3) * 0.04)
                     .blur(radius: 0.5)
                     .modifier(FloatModifier(delay: Double(i) * 0.7, range: 18))
             }
         }
-        .animation(nil, value: vm.theme.id)
     }
 }
-
-// MARK: - Float animation modifier
 
 struct FloatModifier: ViewModifier {
     let delay: Double
@@ -116,16 +84,10 @@ struct FloatModifier: ViewModifier {
     @State private var offset: CGFloat = 0
 
     func body(content: Content) -> some View {
-        content
-            .offset(y: offset)
-            .onAppear {
-                withAnimation(
-                    .easeInOut(duration: 3.5 + delay * 0.4)
-                    .repeatForever(autoreverses: true)
-                    .delay(delay)
-                ) {
-                    offset = -range
-                }
+        content.offset(y: offset).onAppear {
+            withAnimation(.easeInOut(duration: 3.5 + delay * 0.4).repeatForever(autoreverses: true).delay(delay)) {
+                offset = -range
             }
+        }
     }
 }

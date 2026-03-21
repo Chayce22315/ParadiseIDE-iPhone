@@ -5,13 +5,12 @@ import Combine
 
 enum PetMood: String {
     case idle, typing, ai, error, happy
-
     var message: String {
         switch self {
         case .idle:   return ""
-        case .typing: return "You're in the flow!"
+        case .typing: return "In the flow!"
         case .ai:     return "AI has a tip!"
-        case .error:  return "Don't worry, I'm here"
+        case .error:  return "Don't worry!"
         case .happy:  return "Great code!"
         }
     }
@@ -26,25 +25,27 @@ struct AISuggestion: Identifiable {
     let fix: String?
 }
 
-// MARK: - File Item
+// MARK: - Open Tab
 
-struct FileItem: Identifiable {
+struct OpenTab: Identifiable, Equatable {
     let id = UUID()
-    let name: String
-    let type: FileType
-    let depth: Int
-    enum FileType { case directory, file }
+    var url: URL?
+    var name: String
+    var content: String
+    var isDirty: Bool = false
+    var language: String = "swift"
+
+    static func == (lhs: OpenTab, rhs: OpenTab) -> Bool { lhs.id == rhs.id }
 }
 
 // MARK: - IDE Edition
 
 enum IDEEdition: String, CaseIterable {
-    case personal   = "Personal"
-    case community  = "Community"
+    case personal = "Personal"
+    case community = "Community"
     case enterprise = "Enterprise"
-
     var isFree: Bool { self != .enterprise }
-    var price: String { isFree ? "Free forever" : "$99 / year" }
+    var price: String { isFree ? "Free forever" : "$99/yr" }
     var badge: String {
         switch self {
         case .personal:   return "Personal"
@@ -54,84 +55,127 @@ enum IDEEdition: String, CaseIterable {
     }
 }
 
-// MARK: - Starter Code
-
-let paradiseStarterCode = """
-// Welcome to Paradise IDE
-// Your stress-free coding sanctuary
-
-import Foundation
-
-func greetParadise(name: String) -> String {
-    let message = "Hello, \\(name)!"
-    print(message)
-    return message
-}
-
-// AI Co-Pilot is watching...
-// Start typing to feel the flow
-greetParadise(name: "World")
-"""
-
 // MARK: - EditorViewModel
 
 final class EditorViewModel: ObservableObject {
 
+    // Theme & edition
     @Published var theme: ParadiseTheme = .ocean
     @Published var edition: IDEEdition = .personal
     @Published var performanceMode: Bool = false
     @Published var guideMode: Bool = false
 
-    @Published var code: String
-    @Published var selectedFile: String = "main.swift"
+    // Tabs
+    @Published var tabs: [OpenTab] = []
+    @Published var activeTabID: UUID? = nil
+
+    // Legacy single-file state (for compatibility)
+    @Published var selectedFile: String = "untitled.swift"
     @Published var lineCount: Int = 1
     @Published var column: Int = 1
     @Published var currentLine: Int = 1
 
+    // Pet
     @Published var petMood: PetMood = .idle
     @Published var currentSuggestion: AISuggestion? = nil
     @Published var aiPulsing: Bool = false
+
+    // UI
     @Published var showErrorToast: Bool = false
     @Published var showExportPanel: Bool = false
+    @Published var showFindReplace: Bool = false
+    @Published var findText: String = ""
+    @Published var replaceText: String = ""
+
+    // AI response
+    @Published var aiResponse: String = ""
+    @Published var showAIPanel: Bool = false
 
     private var typingWorkItem: DispatchWorkItem?
 
-    init() {
-        self.code = paradiseStarterCode
+    // Current active tab code
+    var code: String {
+        get { activeTab?.content ?? "" }
+        set {
+            guard let id = activeTabID,
+                  let idx = tabs.firstIndex(where: { $0.id == id }) else { return }
+            tabs[idx].content = newValue
+            tabs[idx].isDirty = true
+            onCodeChange(newValue)
+        }
     }
 
-    // MARK: - File tree
+    var activeTab: OpenTab? {
+        guard let id = activeTabID else { return nil }
+        return tabs.first(where: { $0.id == id })
+    }
 
-    let fileTree: [FileItem] = [
-        FileItem(name: "paradise-app", type: .directory, depth: 0),
-        FileItem(name: "Sources",       type: .directory, depth: 1),
-        FileItem(name: "main.swift",    type: .file,      depth: 2),
-        FileItem(name: "Pet.swift",     type: .file,      depth: 2),
-        FileItem(name: "Copilot.swift", type: .file,      depth: 2),
-        FileItem(name: "Themes.swift",  type: .file,      depth: 2),
-        FileItem(name: "Export",        type: .directory, depth: 1),
-        FileItem(name: "build.yaml",    type: .file,      depth: 2),
-        FileItem(name: "Package.swift", type: .file,      depth: 1),
-    ]
+    // MARK: - Tab management
+
+    func openFile(url: URL, content: String, language: String) {
+        // Check if already open
+        if let existing = tabs.first(where: { $0.url == url }) {
+            activeTabID = existing.id
+            return
+        }
+        let tab = OpenTab(
+            url: url,
+            name: url.lastPathComponent,
+            content: content,
+            isDirty: false,
+            language: language
+        )
+        tabs.append(tab)
+        activeTabID = tab.id
+        selectedFile = url.lastPathComponent
+        lineCount = content.components(separatedBy: "\n").count
+    }
+
+    func newUntitledTab(language: String = "swift") {
+        let ext = language == "python" ? "py" : language == "javascript" ? "js" : "swift"
+        let name = "untitled.\(ext)"
+        let tab = OpenTab(url: nil, name: name, content: "", isDirty: false, language: language)
+        tabs.append(tab)
+        activeTabID = tab.id
+        selectedFile = name
+    }
+
+    func closeTab(_ tab: OpenTab) {
+        guard let idx = tabs.firstIndex(of: tab) else { return }
+        tabs.remove(at: idx)
+        if activeTabID == tab.id {
+            activeTabID = tabs.last?.id
+        }
+    }
+
+    func saveActiveTab(using folderManager: FolderManager) {
+        guard let id = activeTabID,
+              let idx = tabs.firstIndex(where: { $0.id == id }) else { return }
+        let tab = tabs[idx]
+        if let url = tab.url {
+            try? folderManager.writeFile(url, content: tab.content)
+            tabs[idx].isDirty = false
+            petMood = .happy
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                self?.petMood = .idle
+            }
+        }
+    }
 
     // MARK: - AI Suggestions
 
     private let suggestions: [AISuggestion] = [
-        AISuggestion(trigger: "func ",  message: "Nice function! Want to add a doc comment?",      fix: "/// Brief description of what this does.\n"),
-        AISuggestion(trigger: "print(", message: "Consider os.log for production-grade logging.",   fix: nil),
-        AISuggestion(trigger: "return", message: "Clean return! Code looks great.",                 fix: nil),
-        AISuggestion(trigger: "catch",  message: "Error caught. Want a friendly user message?",     fix: "// TODO: show user-facing alert here\n"),
-        AISuggestion(trigger: "for ",   message: "Loop detected. Could .map() be cleaner here?",   fix: nil),
-        AISuggestion(trigger: "var ",   message: "Consider 'let' for immutable values.",            fix: nil),
-        AISuggestion(trigger: "async",  message: "Async detected! Remember await and error handling.", fix: nil),
+        AISuggestion(trigger: "func ",  message: "Nice function! Add a doc comment?",      fix: "/// Brief description.\n"),
+        AISuggestion(trigger: "print(", message: "Consider os.log for production.",         fix: nil),
+        AISuggestion(trigger: "catch",  message: "Error caught. Add user-facing message?",  fix: "// TODO: show alert\n"),
+        AISuggestion(trigger: "for ",   message: "Loop detected. Could .map() be cleaner?", fix: nil),
+        AISuggestion(trigger: "var ",   message: "Consider 'let' if value won't change.",   fix: nil),
+        AISuggestion(trigger: "async",  message: "Remember await and error handling.",       fix: nil),
+        AISuggestion(trigger: "TODO",   message: "You have a TODO here — want help with it?",fix: nil),
     ]
 
-    // MARK: - Code editing
-
     func onCodeChange(_ newValue: String) {
-        code = newValue
         lineCount = newValue.components(separatedBy: "\n").count
-
         petMood = .typing
 
         typingWorkItem?.cancel()
@@ -141,7 +185,7 @@ final class EditorViewModel: ObservableObject {
 
         let tail = String(newValue.suffix(120)).lowercased()
         for suggestion in suggestions {
-            if tail.contains(suggestion.trigger) {
+            if tail.contains(suggestion.trigger.lowercased()) {
                 triggerAISuggestion(suggestion)
                 return
             }
@@ -152,7 +196,7 @@ final class EditorViewModel: ObservableObject {
         currentSuggestion = suggestion
         aiPulsing = true
         petMood = .ai
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { [weak self] in
             self?.aiPulsing = false
         }
     }
@@ -168,9 +212,7 @@ final class EditorViewModel: ObservableObject {
         currentSuggestion = nil
     }
 
-    func dismissSuggestion() {
-        currentSuggestion = nil
-    }
+    func dismissSuggestion() { currentSuggestion = nil }
 
     func triggerErrorToast() {
         showErrorToast = true
