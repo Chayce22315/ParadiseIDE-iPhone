@@ -5,6 +5,7 @@ struct TopBarView: View {
     @EnvironmentObject var folderManager: FolderManager
     @Binding var sidebarVisible: Bool
     @Binding var terminalVisible: Bool
+    @State private var showingPicker = false
 
     var t: ParadiseTheme { vm.theme }
 
@@ -21,32 +22,38 @@ struct TopBarView: View {
                 .font(.system(size: 14, weight: .medium, design: .serif))
                 .italic().foregroundColor(t.accent)
 
-            Button {
-                folderManager.showPicker = true
-            } label: {
+            Button { showingPicker = true } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "folder").font(.system(size: 11))
-                    Text(folderManager.rootName).font(.system(size: 10, design: .monospaced)).lineLimit(1)
+                    Text(folderManager.rootName)
+                        .font(.system(size: 10, design: .monospaced))
+                        .lineLimit(1)
                 }
                 .foregroundColor(folderManager.rootURL != nil ? t.accent : t.mutedColor)
                 .padding(.horizontal, 8).padding(.vertical, 4)
                 .background(
                     RoundedRectangle(cornerRadius: 20)
                         .fill(folderManager.rootURL != nil ? t.accent.opacity(0.12) : Color.clear)
-                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(folderManager.rootURL != nil ? t.accent : t.surfaceBorder, lineWidth: 1))
+                        .overlay(RoundedRectangle(cornerRadius: 20)
+                            .stroke(folderManager.rootURL != nil ? t.accent : t.surfaceBorder, lineWidth: 1))
                 )
             }
             .buttonStyle(.plain)
-            .sheet(isPresented: $folderManager.showPicker) {
-                FolderPicker { url in
-                    folderManager.openFolder(url)
-                    folderManager.showPicker = false
-                }
+            .fullScreenCover(isPresented: $showingPicker) {
+                FolderPicker(
+                    onPick: { url in
+                        showingPicker = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            folderManager.openFolder(url)
+                        }
+                    },
+                    onCancel: { showingPicker = false }
+                )
+                .ignoresSafeArea()
             }
 
             Spacer()
 
-            // Theme dots
             HStack(spacing: 6) {
                 ForEach(ParadiseTheme.all) { theme in
                     Button {
@@ -61,22 +68,26 @@ struct TopBarView: View {
                 }
             }
 
-            // Perf
             Button { vm.performanceMode.toggle() } label: {
                 Text("PERF")
                     .font(.system(size: 9, design: .monospaced))
                     .foregroundColor(vm.performanceMode ? t.accent : t.mutedColor)
                     .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 20).fill(vm.performanceMode ? t.accent.opacity(0.15) : Color.clear).overlay(RoundedRectangle(cornerRadius: 20).stroke(vm.performanceMode ? t.accent : t.surfaceBorder, lineWidth: 1)))
+                    .background(RoundedRectangle(cornerRadius: 20)
+                        .fill(vm.performanceMode ? t.accent.opacity(0.15) : Color.clear)
+                        .overlay(RoundedRectangle(cornerRadius: 20)
+                            .stroke(vm.performanceMode ? t.accent : t.surfaceBorder, lineWidth: 1)))
             }.buttonStyle(.plain)
 
-            // Terminal
             Button { withAnimation { terminalVisible.toggle() } } label: {
                 Image(systemName: "terminal")
                     .font(.system(size: 13))
                     .foregroundColor(terminalVisible ? t.accent : t.mutedColor)
                     .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 20).fill(terminalVisible ? t.accent.opacity(0.15) : Color.clear).overlay(RoundedRectangle(cornerRadius: 20).stroke(terminalVisible ? t.accent : t.surfaceBorder, lineWidth: 1)))
+                    .background(RoundedRectangle(cornerRadius: 20)
+                        .fill(terminalVisible ? t.accent.opacity(0.15) : Color.clear)
+                        .overlay(RoundedRectangle(cornerRadius: 20)
+                            .stroke(terminalVisible ? t.accent : t.surfaceBorder, lineWidth: 1)))
             }.buttonStyle(.plain)
         }
         .padding(.horizontal, 12)

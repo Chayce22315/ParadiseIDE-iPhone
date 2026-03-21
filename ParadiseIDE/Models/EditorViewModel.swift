@@ -132,7 +132,17 @@ final class EditorViewModel: ObservableObject {
     }
 
     func newUntitledTab(language: String = "swift") {
-        let ext = language == "python" ? "py" : language == "javascript" ? "js" : "swift"
+        let extMap: [String: String] = [
+            "python": "py", "javascript": "js", "typescript": "ts",
+            "jsx": "jsx", "tsx": "tsx", "rust": "rs", "go": "go",
+            "ruby": "rb", "java": "java", "kotlin": "kt", "c": "c",
+            "cpp": "cpp", "csharp": "cs", "php": "php", "lua": "lua",
+            "sql": "sql", "shell": "sh", "html": "html", "css": "css",
+            "json": "json", "yaml": "yml", "markdown": "md",
+            "dart": "dart", "scala": "scala", "r": "r",
+            "elixir": "ex", "haskell": "hs",
+        ]
+        let ext = extMap[language] ?? "swift"
         let name = "untitled.\(ext)"
         let tab = OpenTab(url: nil, name: name, content: "", isDirty: false, language: language)
         tabs.append(tab)
@@ -148,7 +158,7 @@ final class EditorViewModel: ObservableObject {
         }
     }
 
-        @MainActor func saveActiveTab(using folderManager: FolderManager) {
+    func saveActiveTab(using folderManager: FolderManager) {
         guard let id = activeTabID,
               let idx = tabs.firstIndex(where: { $0.id == id }) else { return }
         let tab = tabs[idx]

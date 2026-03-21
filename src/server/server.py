@@ -33,6 +33,7 @@ from pydantic import BaseModel
 
 from paradise import Downloader, PackageInstaller, ProcessManager, FileManager, PythonREPL, AIProxy
 from paradise.ai import MODEL
+from paradise.libraries import format_catalog
 
 # -----------------------------------------------------------------
 app = FastAPI(title="Paradise IDE Server", version="2.0.0")
@@ -147,6 +148,10 @@ async def terminal(ws: WebSocket, session_id: str):
             # 
             if command == "help":
                 await send("stdout", HELP_TEXT)
+
+            elif cmd0 == "libs":
+                lang = parts[1] if len(parts) > 1 else None
+                await send("stdout", format_catalog(lang))
 
             # 
             elif command == "clear":

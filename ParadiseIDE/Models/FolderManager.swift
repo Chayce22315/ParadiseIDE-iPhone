@@ -1,7 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-// MARK: - File Node (real filesystem item)
+// MARK: - File Node
 
 class FileNode: Identifiable, ObservableObject {
     let id = UUID()
@@ -17,41 +17,99 @@ class FileNode: Identifiable, ObservableObject {
         var isDir: ObjCBool = false
         FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
         self.isDirectory = isDir.boolValue
-        if self.isDirectory {
-            self.children = []
-        }
+        if self.isDirectory { self.children = [] }
     }
 
     var icon: String {
         if isDirectory { return "folder.fill" }
         switch url.pathExtension.lowercased() {
-        case "swift":        return "swift"
-        case "py":           return "terminal.fill"
-        case "js", "ts":     return "j.square"
-        case "json":         return "curlybraces"
-        case "yaml", "yml":  return "gearshape"
-        case "md":           return "doc.text"
-        case "html":         return "globe"
-        case "css":          return "paintbrush"
-        case "sh":           return "terminal"
-        case "zip", "tar":   return "archivebox"
-        case "png","jpg","jpeg","gif","webp": return "photo"
-        default:             return "doc"
+        case "swift":                    return "swift"
+        case "py":                       return "terminal.fill"
+        case "js", "mjs", "cjs":        return "j.square"
+        case "ts", "tsx":                return "t.square"
+        case "jsx":                      return "atom"
+        case "json":                     return "curlybraces"
+        case "yaml", "yml":              return "gearshape"
+        case "md", "mdx":               return "doc.text"
+        case "html", "htm":             return "globe"
+        case "css", "scss", "sass":     return "paintbrush"
+        case "sh", "bash", "zsh":       return "terminal"
+        case "zip", "tar", "gz":        return "archivebox"
+        case "png","jpg","jpeg","gif","webp","svg": return "photo"
+        case "rs":                       return "r.square"
+        case "go":                       return "g.square"
+        case "rb":                       return "diamond"
+        case "java", "kt", "kts":       return "j.circle"
+        case "c", "h":                   return "c.square"
+        case "cpp", "cc", "cxx", "hpp": return "plus.square"
+        case "cs":                       return "number.square"
+        case "php":                      return "p.square"
+        case "lua":                      return "l.square"
+        case "sql":                      return "cylinder"
+        case "xml":                      return "chevron.left.forwardslash.chevron.right"
+        case "toml", "ini", "cfg":      return "gearshape.2"
+        case "env":                      return "lock.doc"
+        case "dockerfile":              return "shippingbox"
+        case "ipa", "apk", "exe":       return "app.badge"
+        default:                         return "doc"
         }
     }
 
     var language: String {
+        switch url.lastPathComponent.lowercased() {
+        case "dockerfile": return "dockerfile"
+        case "makefile":   return "makefile"
+        case ".env", ".env.example": return "env"
+        default: break
+        }
         switch url.pathExtension.lowercased() {
-        case "swift":    return "swift"
-        case "py":       return "python"
-        case "js","ts":  return "javascript"
-        case "json":     return "json"
-        case "yaml","yml": return "yaml"
-        case "html":     return "html"
-        case "css":      return "css"
-        case "md":       return "markdown"
-        case "sh":       return "shell"
-        default:         return "text"
+        case "swift":                    return "swift"
+        case "py", "pyw":               return "python"
+        case "js", "mjs", "cjs":        return "javascript"
+        case "ts":                       return "typescript"
+        case "tsx":                      return "tsx"
+        case "jsx":                      return "jsx"
+        case "json", "jsonc":           return "json"
+        case "yaml", "yml":             return "yaml"
+        case "toml":                     return "toml"
+        case "md", "mdx":               return "markdown"
+        case "html", "htm":             return "html"
+        case "css":                      return "css"
+        case "scss":                     return "scss"
+        case "sass":                     return "sass"
+        case "sh", "bash", "zsh":       return "shell"
+        case "rs":                       return "rust"
+        case "go":                       return "go"
+        case "rb":                       return "ruby"
+        case "java":                     return "java"
+        case "kt", "kts":               return "kotlin"
+        case "c", "h":                   return "c"
+        case "cpp","cc","cxx","hpp":    return "cpp"
+        case "cs":                       return "csharp"
+        case "php":                      return "php"
+        case "lua":                      return "lua"
+        case "sql":                      return "sql"
+        case "r":                        return "r"
+        case "dart":                     return "dart"
+        case "ex", "exs":               return "elixir"
+        case "erl", "hrl":              return "erlang"
+        case "hs":                       return "haskell"
+        case "ml", "mli":               return "ocaml"
+        case "clj", "cljs":             return "clojure"
+        case "scala":                    return "scala"
+        case "groovy":                   return "groovy"
+        case "pl", "pm":                return "perl"
+        case "xml", "plist":            return "xml"
+        case "ini", "cfg", "conf":      return "ini"
+        case "env":                      return "env"
+        case "dockerfile":              return "dockerfile"
+        case "tf", "tfvars":            return "terraform"
+        case "proto":                    return "protobuf"
+        case "graphql", "gql":          return "graphql"
+        case "vue":                      return "vue"
+        case "svelte":                   return "svelte"
+        case "txt", "log":              return "text"
+        default:                         return "text"
         }
     }
 }
@@ -64,10 +122,10 @@ final class FolderManager: ObservableObject {
     @Published var rootURL: URL? = nil
     @Published var rootName: String = "No folder"
     @Published var showPicker: Bool = false
+    @Published var errorMessage: String? = nil
 
-    private let bookmarkKey = "paradise.folderBookmark.v2"
+    private let bookmarkKey = "paradise.folderBookmark.v3"
 
-    // App Documents folder — visible in Files app
     static var documentsURL: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
     }
@@ -82,16 +140,14 @@ final class FolderManager: ObservableObject {
         restoreBookmark()
     }
 
-    // MARK: - Open folder
+    // MARK: - Open folder (called from picker delegate)
 
     func openFolder(_ url: URL) {
-        guard url.startAccessingSecurityScopedResource() else {
-            print("Failed to access security scoped resource")
-            // Try without security scope (for app's own Documents)
-            loadFolder(url)
-            return
-        }
-        saveBookmark(url)
+        // Must call startAccessingSecurityScopedResource on the URL from the picker
+        let accessing = url.startAccessingSecurityScopedResource()
+        print("Paradise: openFolder called with \(url.path), accessing=\(accessing)")
+
+        saveBookmark(url, accessing: accessing)
         loadFolder(url)
     }
 
@@ -100,18 +156,23 @@ final class FolderManager: ObservableObject {
         rootName = url.lastPathComponent
         let node = FileNode(url: url)
         loadChildren(of: node)
-        rootNode = node
         node.isExpanded = true
+        rootNode = node
+        print("Paradise: loaded folder \(url.path) with \(node.children?.count ?? 0) items")
     }
 
     func loadChildren(of node: FileNode) {
         guard node.isDirectory else { return }
         let fm = FileManager.default
+
         guard let contents = try? fm.contentsOfDirectory(
             at: node.url,
-            includingPropertiesForKeys: [.isDirectoryKey, .nameKey],
+            includingPropertiesForKeys: [.isDirectoryKey, .nameKey, .isHiddenKey],
             options: [.skipsHiddenFiles]
-        ) else { return }
+        ) else {
+            print("Paradise: cannot read directory \(node.url.path)")
+            return
+        }
 
         let sorted = contents.sorted {
             let aIsDir = (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) ?? false
@@ -129,7 +190,7 @@ final class FolderManager: ObservableObject {
     }
 
     func clearFolder() {
-        rootNode?.url.stopAccessingSecurityScopedResource()
+        rootURL?.stopAccessingSecurityScopedResource()
         rootNode = nil
         rootURL = nil
         rootName = "No folder"
@@ -139,7 +200,12 @@ final class FolderManager: ObservableObject {
     // MARK: - File operations
 
     func readFile(_ url: URL) -> String? {
-        try? String(contentsOf: url, encoding: .utf8)
+        do {
+            return try String(contentsOf: url, encoding: .utf8)
+        } catch {
+            // Try latin1 as fallback
+            return try? String(contentsOf: url, encoding: .isoLatin1)
+        }
     }
 
     func writeFile(_ url: URL, content: String) throws {
@@ -148,7 +214,7 @@ final class FolderManager: ObservableObject {
 
     func createFile(in directory: URL, name: String) throws -> URL {
         let url = directory.appendingPathComponent(name)
-        try "".write(to: url, atomically: true, encoding: .utf8)
+        FileManager.default.createFile(atPath: url.path, contents: nil)
         refresh()
         return url
     }
@@ -174,9 +240,10 @@ final class FolderManager: ObservableObject {
 
     // MARK: - Bookmark
 
-    private func saveBookmark(_ url: URL) {
+    private func saveBookmark(_ url: URL, accessing: Bool) {
+        let opts: URL.BookmarkCreationOptions = accessing ? .minimalBookmark : .minimalBookmark
         guard let data = try? url.bookmarkData(
-            options: .minimalBookmark,
+            options: opts,
             includingResourceValuesForKeys: nil,
             relativeTo: nil
         ) else { return }
@@ -192,12 +259,12 @@ final class FolderManager: ObservableObject {
             relativeTo: nil,
             bookmarkDataIsStale: &stale
         ) else { return }
-        if stale { saveBookmark(url) }
+        if stale { print("Paradise: bookmark stale, re-saving") }
         _ = url.startAccessingSecurityScopedResource()
         loadFolder(url)
     }
 
-    // MARK: - Documents browser
+    // MARK: - Documents
 
     func listDocuments() -> [URL] {
         (try? FileManager.default.contentsOfDirectory(
@@ -206,41 +273,57 @@ final class FolderManager: ObservableObject {
             options: .skipsHiddenFiles
         )) ?? []
     }
-
-    func exportToDocuments(text: String, filename: String) throws -> URL {
-        let dest = Self.paradiseDocumentsURL.appendingPathComponent(filename)
-        try text.write(to: dest, atomically: true, encoding: .utf8)
-        return dest
-    }
 }
 
 // MARK: - Folder Picker
 
 struct FolderPicker: UIViewControllerRepresentable {
     let onPick: (URL) -> Void
+    let onCancel: (() -> Void)?
+
+    init(onPick: @escaping (URL) -> Void, onCancel: (() -> Void)? = nil) {
+        self.onPick = onPick
+        self.onCancel = onCancel
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onPick: onPick, onCancel: onCancel)
+    }
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
+        let picker: UIDocumentPickerViewController
+        if #available(iOS 14.0, *) {
+            picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder])
+        } else {
+            picker = UIDocumentPickerViewController(documentTypes: ["public.folder"], in: .open)
+        }
         picker.allowsMultipleSelection = false
         picker.shouldShowFileExtensions = true
         picker.delegate = context.coordinator
         return picker
     }
 
-    func updateUIViewController(_ vc: UIDocumentPickerViewController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator { Coordinator(onPick: onPick) }
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
 
     class Coordinator: NSObject, UIDocumentPickerDelegate {
         let onPick: (URL) -> Void
-        init(onPick: @escaping (URL) -> Void) { self.onPick = onPick }
+        let onCancel: (() -> Void)?
+
+        init(onPick: @escaping (URL) -> Void, onCancel: (() -> Void)?) {
+            self.onPick = onPick
+            self.onCancel = onCancel
+        }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             guard let url = urls.first else { return }
+            print("Paradise: picker selected \(url.path)")
             onPick(url)
         }
 
-        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {}
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+            print("Paradise: picker cancelled")
+            onCancel?()
+        }
     }
 }
 

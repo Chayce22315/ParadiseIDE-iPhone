@@ -5,6 +5,7 @@ from .process_manager import ProcessManager
 from .file_manager import FileManager
 from .repl import PythonREPL
 from .ai import AIProxy
+from .libraries import format_catalog, LIBRARY_CATALOG
 
 __all__ = [
     "Downloader",
@@ -13,4 +14,6 @@ __all__ = [
     "FileManager",
     "PythonREPL",
     "AIProxy",
+    "format_catalog",
+    "LIBRARY_CATALOG",
 ]

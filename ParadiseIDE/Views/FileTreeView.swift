@@ -124,11 +124,17 @@ struct FileTreeView: View {
         }
         .background(t.surface)
         .overlay(Rectangle().frame(width: 1).foregroundColor(t.surfaceBorder), alignment: .trailing)
-        .sheet(isPresented: $folderManager.showPicker) {
-            FolderPicker { url in
-                folderManager.openFolder(url)
-                folderManager.showPicker = false
-            }
+        .fullScreenCover(isPresented: $folderManager.showPicker) {
+            FolderPicker(
+                onPick: { url in
+                    folderManager.showPicker = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        folderManager.openFolder(url)
+                    }
+                },
+                onCancel: { folderManager.showPicker = false }
+            )
+            .ignoresSafeArea()
         }
         .alert("New File", isPresented: $showNewFile) {
             TextField("filename.swift", text: $newItemName)
