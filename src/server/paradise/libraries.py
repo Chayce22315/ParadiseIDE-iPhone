@@ -1,4 +1,4 @@
-""""
+"""
 paradise/libraries.py
 Catalog of pre-installed libraries per language.
 Used by the ‘libs’ command to show what’s available.
