@@ -30,6 +30,12 @@ jobs:
       - name: Install server dependencies
         run: pip install --quiet -r src/server/requirements.txt
 
+      - name: Fix curly quotes in Python files
+        run: |
+          find src/server -name "*.py" | xargs sed -i \
+            's/\xe2\x80\x9c/"/g; s/\xe2\x80\x9d/"/g; s/\xe2\x80\x98/'"'"'/g; s/\xe2\x80\x99/'"'"'/g'
+          echo "Curly quotes fixed"
+
       - name: Check syntax - all modules
         run: |
           python3 - << 'PYCHECK'
