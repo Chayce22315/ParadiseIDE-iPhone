@@ -87,14 +87,7 @@ targets:
         excludes:
           - "**/Info.plist"
     info:
-      properties:
-        CFBundleDisplayName: Paradise IDE Widget
-        CFBundleIdentifier: com.paradise.ide.widget
-        CFBundleShortVersionString: "$(MARKETING_VERSION)"
-        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
-        CFBundlePackageType: XPC!
-        NSExtension:
-          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+      path: ParadiseIDEWidget/Info.plist
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.paradise.ide.widget
