@@ -5,37 +5,33 @@ struct TopBarView: View {
     @EnvironmentObject var folderManager: FolderManager
     @Binding var sidebarVisible: Bool
     @Binding var terminalVisible: Bool
+    @Binding var rightPanelVisible: Bool
     @State private var showingPicker = false
 
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
-        HStack(spacing: 10) {
-
-            Button { withAnimation { sidebarVisible.toggle() } } label: {
-                Image(systemName: "sidebar.left")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(t.mutedColor)
+        HStack(spacing: 12) {
+            Button { withAnimation(.spring(response: 0.3)) { sidebarVisible.toggle() } } label: {
+                Image(systemName: sidebarVisible ? "sidebar.left" : "line.3.horizontal")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(sidebarVisible ? t.accent : t.mutedColor)
+                    .glassButton(theme: t, isActive: sidebarVisible)
             }.buttonStyle(.plain)
 
-            Text("Paradise IDE")
-                .font(.system(size: 14, weight: .medium, design: .serif))
-                .italic().foregroundColor(t.accent)
-
             Button { showingPicker = true } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "folder").font(.system(size: 11))
+                HStack(spacing: 5) {
+                    Image(systemName: "folder.fill").font(.system(size: 11))
                     Text(folderManager.rootName)
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
                         .lineLimit(1)
                 }
                 .foregroundColor(folderManager.rootURL != nil ? t.accent : t.mutedColor)
-                .padding(.horizontal, 8).padding(.vertical, 4)
+                .padding(.horizontal, 10).padding(.vertical, 6)
                 .background(
-                    RoundedRectangle(cornerRadius: 20)
+                    Capsule()
                         .fill(folderManager.rootURL != nil ? t.accent.opacity(0.12) : Color.clear)
-                        .overlay(RoundedRectangle(cornerRadius: 20)
-                            .stroke(folderManager.rootURL != nil ? t.accent : t.surfaceBorder, lineWidth: 1))
+                        .overlay(Capsule().stroke(folderManager.rootURL != nil ? t.accent.opacity(0.3) : t.surfaceBorder, lineWidth: 0.5))
                 )
             }
             .buttonStyle(.plain)
@@ -54,45 +50,65 @@ struct TopBarView: View {
 
             Spacer()
 
-            HStack(spacing: 6) {
+            HStack(spacing: 5) {
                 ForEach(ParadiseTheme.all) { theme in
                     Button {
                         withAnimation(.easeInOut(duration: 0.6)) { vm.theme = theme }
                     } label: {
-                        Circle().fill(theme.accent).frame(width: 14, height: 14)
-                            .overlay(Circle().stroke(vm.theme == theme ? theme.accent : Color.clear, lineWidth: 2).padding(-3))
-                            .shadow(color: vm.theme == theme ? theme.accent.opacity(0.6) : .clear, radius: 5)
-                            .scaleEffect(vm.theme == theme ? 1.2 : 1.0)
+                        Circle().fill(theme.accent).frame(width: 12, height: 12)
+                            .overlay(Circle().stroke(vm.theme == theme ? .white.opacity(0.8) : Color.clear, lineWidth: 1.5).padding(-2))
+                            .shadow(color: vm.theme == theme ? theme.accent.opacity(0.8) : .clear, radius: 6)
+                            .scaleEffect(vm.theme == theme ? 1.15 : 1.0)
                             .animation(.spring(response: 0.3), value: vm.theme == theme)
                     }.buttonStyle(.plain)
                 }
             }
 
-            Button { vm.performanceMode.toggle() } label: {
-                Text("PERF")
-                    .font(.system(size: 9, design: .monospaced))
-                    .foregroundColor(vm.performanceMode ? t.accent : t.mutedColor)
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 20)
-                        .fill(vm.performanceMode ? t.accent.opacity(0.15) : Color.clear)
-                        .overlay(RoundedRectangle(cornerRadius: 20)
-                            .stroke(vm.performanceMode ? t.accent : t.surfaceBorder, lineWidth: 1)))
-            }.buttonStyle(.plain)
+            HStack(spacing: 8) {
+                ToolbarPillButton(icon: "gearshape", label: nil, isActive: false, theme: t) {
+                    vm.showSettingsPanel = true
+                }
 
-            Button { withAnimation { terminalVisible.toggle() } } label: {
-                Image(systemName: "terminal")
-                    .font(.system(size: 13))
-                    .foregroundColor(terminalVisible ? t.accent : t.mutedColor)
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 20)
-                        .fill(terminalVisible ? t.accent.opacity(0.15) : Color.clear)
-                        .overlay(RoundedRectangle(cornerRadius: 20)
-                            .stroke(terminalVisible ? t.accent : t.surfaceBorder, lineWidth: 1)))
-            }.buttonStyle(.plain)
+                ToolbarPillButton(icon: "doc.on.clipboard", label: nil, isActive: false, theme: t) {
+                    vm.showSnippetsPanel = true
+                }
+
+                ToolbarPillButton(icon: "terminal", label: nil, isActive: terminalVisible, theme: t) {
+                    withAnimation { terminalVisible.toggle() }
+                }
+
+                ToolbarPillButton(icon: "sidebar.right", label: nil, isActive: rightPanelVisible, theme: t) {
+                    withAnimation(.spring(response: 0.3)) { rightPanelVisible.toggle() }
+                }
+            }
         }
-        .padding(.horizontal, 12)
-        .frame(height: 46)
-        .background(t.surface.background(.ultraThinMaterial).ignoresSafeArea(edges: .top))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(t.surfaceBorder), alignment: .bottom)
+        .padding(.horizontal, 14)
+        .frame(height: 48)
+        .background(.ultraThinMaterial.opacity(0.8))
+        .overlay(Rectangle().frame(height: 0.5).foregroundColor(t.surfaceBorder), alignment: .bottom)
+    }
+}
+
+struct ToolbarPillButton: View {
+    let icon: String
+    let label: String?
+    let isActive: Bool
+    let theme: ParadiseTheme
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .medium))
+                if let label = label {
+                    Text(label)
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                }
+            }
+            .foregroundColor(isActive ? theme.accent : theme.mutedColor)
+            .glassButton(theme: theme, isActive: isActive)
+        }
+        .buttonStyle(.plain)
     }
 }

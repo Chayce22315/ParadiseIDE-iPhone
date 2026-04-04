@@ -4,24 +4,33 @@ struct VirtualPetView: View {
     @EnvironmentObject var vm: EditorViewModel
     var t: ParadiseTheme { vm.theme }
 
-    // Drive animation from mood
     @State private var bounceOffset: CGFloat = 0
     @State private var rotation: Double = 0
     @State private var scale: CGFloat = 1.0
 
     var body: some View {
-        VStack(spacing: 3) {
+        VStack(spacing: 2) {
             Button {
                 vm.petTapped()
             } label: {
                 Text(t.petEmoji)
-                    .font(.system(size: 24))
-                    .frame(width: 44, height: 44)
+                    .font(.system(size: 20))
+                    .frame(width: 36, height: 36)
                     .background(
                         Circle()
-                            .fill(t.surface)
-                            .overlay(Circle().stroke(t.surfaceBorder, lineWidth: 1.5))
-                            .shadow(color: t.accent.opacity(0.25), radius: 10)
+                            .fill(.ultraThinMaterial)
+                            .overlay(
+                                Circle()
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [Color.white.opacity(0.2), t.accent.opacity(0.2)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 0.5
+                                    )
+                            )
+                            .shadow(color: t.accent.opacity(0.2), radius: 8)
                     )
                     .offset(y: bounceOffset)
                     .rotationEffect(.degrees(rotation))
@@ -31,7 +40,7 @@ struct VirtualPetView: View {
 
             if !vm.petMood.message.isEmpty {
                 Text(vm.petMood.message)
-                    .font(.system(size: 8, design: .monospaced))
+                    .font(.system(size: 8, weight: .medium, design: .monospaced))
                     .foregroundColor(t.accent)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 72)

@@ -18,12 +18,11 @@ struct EditorView: View {
             } else {
                 HStack(spacing: 0) {
                     LineGutter()
-                        .frame(width: 44)
+                        .frame(width: 48)
                     CodeEditorPane()
                 }
             }
 
-            // AI response panel
             if vm.showAIPanel && !vm.aiResponse.isEmpty {
                 AIResponsePanel()
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -31,14 +30,14 @@ struct EditorView: View {
 
             EditorToolbarView()
         }
-        .background(Color.black.opacity(0.12))
+        .background(Color.black.opacity(0.08))
         .animation(.spring(response: 0.3), value: vm.guideMode)
         .animation(.spring(response: 0.3), value: vm.showFindReplace)
         .animation(.spring(response: 0.3), value: vm.showAIPanel)
     }
 }
 
-// MARK: - Welcome screen (no tabs open)
+// MARK: - Welcome screen
 
 struct WelcomeView: View {
     @EnvironmentObject var vm: EditorViewModel
@@ -46,37 +45,81 @@ struct WelcomeView: View {
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Paradise IDE")
-                .font(.system(size: 28, weight: .medium, design: .serif))
-                .italic()
-                .foregroundColor(t.accent)
+        VStack(spacing: 24) {
+            Spacer()
 
-            Text("Open a folder to start coding")
-                .font(.system(size: 13, design: .monospaced))
-                .foregroundColor(t.mutedColor)
+            VStack(spacing: 8) {
+                Text(t.petEmoji)
+                    .font(.system(size: 56))
+                    .shadow(color: t.accent.opacity(0.3), radius: 20)
 
-            HStack(spacing: 12) {
-                Button("Open Folder") {
+                Text("Paradise IDE")
+                    .font(.system(size: 32, weight: .semibold, design: .serif))
+                    .italic()
+                    .foregroundColor(t.accent)
+
+                Text("A calm place to write code")
+                    .font(.system(size: 14, design: .rounded))
+                    .foregroundColor(t.mutedColor)
+            }
+
+            VStack(spacing: 12) {
+                WelcomeActionButton(icon: "folder.fill", title: "Open Folder", subtitle: "Browse your project files", theme: t) {
                     folderManager.showPicker = true
                 }
-                .font(.system(size: 12, design: .monospaced))
-                .foregroundColor(t.accent)
-                .padding(.horizontal, 16).padding(.vertical, 8)
-                .background(RoundedRectangle(cornerRadius: 8).stroke(t.accent, lineWidth: 1))
-                .buttonStyle(.plain)
 
-                Button("New File") {
+                WelcomeActionButton(icon: "doc.badge.plus", title: "New File", subtitle: "Start with a blank canvas", theme: t) {
                     vm.newUntitledTab()
                 }
-                .font(.system(size: 12, design: .monospaced))
-                .foregroundColor(t.mutedColor)
-                .padding(.horizontal, 16).padding(.vertical, 8)
-                .background(RoundedRectangle(cornerRadius: 8).stroke(t.surfaceBorder, lineWidth: 1))
-                .buttonStyle(.plain)
+
+                WelcomeActionButton(icon: "doc.on.clipboard", title: "Snippets", subtitle: "Browse code templates", theme: t) {
+                    vm.showSnippetsPanel = true
+                }
             }
+            .padding(.horizontal, 40)
+
+            Spacer()
+
+            Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.1")")
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(t.mutedColor.opacity(0.4))
+                .padding(.bottom, 8)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+struct WelcomeActionButton: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let theme: ParadiseTheme
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10).fill(theme.accent.opacity(0.12)).frame(width: 38, height: 38)
+                    Image(systemName: icon).font(.system(size: 16)).foregroundColor(theme.accent)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 14, weight: .medium, design: .monospaced))
+                        .foregroundColor(theme.textColor)
+                    Text(subtitle)
+                        .font(.system(size: 11, design: .rounded))
+                        .foregroundColor(theme.mutedColor)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(theme.mutedColor.opacity(0.5))
+            }
+            .padding(14)
+            .liquidGlass(theme: theme, cornerRadius: 14)
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -89,49 +132,48 @@ struct TabBarView: View {
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 0) {
+            HStack(spacing: 4) {
                 ForEach(vm.tabs) { tab in
                     TabButton(tab: tab, theme: t)
                 }
 
-                // New tab button
                 Button {
                     vm.newUntitledTab()
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(t.mutedColor)
-                        .frame(width: 32, height: 36)
+                        .frame(width: 30, height: 30)
+                        .background(Circle().fill(t.mutedColor.opacity(0.1)))
                 }
                 .buttonStyle(.plain)
             }
+            .padding(.horizontal, 10)
         }
-        .frame(height: 36)
-        .background(t.surface)
-        .overlay(Rectangle().frame(height: 1).foregroundColor(t.surfaceBorder), alignment: .bottom)
+        .frame(height: 40)
+        .background(.ultraThinMaterial.opacity(0.5))
+        .overlay(Rectangle().frame(height: 0.5).foregroundColor(t.surfaceBorder), alignment: .bottom)
         .overlay(
             HStack {
                 Spacer()
-                // Guide + Pet
-                HStack(spacing: 8) {
+                HStack(spacing: 10) {
                     Button { withAnimation { vm.guideMode.toggle() } } label: {
-                        Text("Guide")
-                            .font(.system(size: 9, design: .monospaced))
+                        Image(systemName: "map")
+                            .font(.system(size: 12))
                             .foregroundColor(vm.guideMode ? t.accent : t.mutedColor)
                     }.buttonStyle(.plain)
 
-                    // Save button
                     Button {
                         vm.saveActiveTab(using: folderManager)
                     } label: {
                         Image(systemName: "square.and.arrow.down")
-                            .font(.system(size: 12))
+                            .font(.system(size: 13))
                             .foregroundColor(vm.activeTab?.isDirty == true ? t.accent : t.mutedColor)
                     }.buttonStyle(.plain)
 
                     VirtualPetView()
                 }
-                .padding(.trailing, 10)
+                .padding(.trailing, 12)
             }
         )
     }
@@ -145,9 +187,9 @@ struct TabButton: View {
     var isActive: Bool { vm.activeTabID == tab.id }
 
     var body: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 6) {
             Text(tab.name)
-                .font(.system(size: 11, design: .monospaced))
+                .font(.system(size: 11, weight: isActive ? .semibold : .regular, design: .monospaced))
                 .foregroundColor(isActive ? theme.accent : theme.mutedColor)
                 .lineLimit(1)
 
@@ -161,19 +203,20 @@ struct TabButton: View {
                 vm.closeTab(tab)
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundColor(theme.mutedColor)
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(theme.mutedColor.opacity(0.6))
             }.buttonStyle(.plain)
         }
-        .padding(.horizontal, 12).padding(.vertical, 6)
-        .background(isActive ? theme.accent.opacity(0.10) : Color.clear)
-        .overlay(
-            Rectangle()
-                .frame(height: 1.5)
-                .foregroundColor(isActive ? theme.accent : .clear),
-            alignment: .bottom
+        .padding(.horizontal, 12).padding(.vertical, 7)
+        .background(
+            Capsule()
+                .fill(isActive ? theme.accent.opacity(0.12) : Color.clear)
+                .overlay(
+                    Capsule()
+                        .stroke(isActive ? theme.accent.opacity(0.25) : Color.clear, lineWidth: 0.5)
+                )
         )
-        .contentShape(Rectangle())
+        .contentShape(Capsule())
         .onTapGesture { vm.activeTabID = tab.id }
     }
 }
@@ -184,18 +227,18 @@ struct GuideBannerView: View {
     @EnvironmentObject var vm: EditorViewModel
     var t: ParadiseTheme { vm.theme }
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "map").foregroundColor(t.accent).font(.system(size: 11))
-            Text("Guide Mode: AI will highlight next steps as you type.")
-                .font(.system(size: 11, design: .monospaced)).foregroundColor(t.textColor)
+        HStack(spacing: 10) {
+            Image(systemName: "map.fill").foregroundColor(t.accent).font(.system(size: 12))
+            Text("Guide Mode: AI highlights next steps as you type.")
+                .font(.system(size: 12, design: .rounded)).foregroundColor(t.textColor)
             Spacer()
             Button { vm.guideMode = false } label: {
-                Image(systemName: "xmark").font(.system(size: 10)).foregroundColor(t.mutedColor)
+                Image(systemName: "xmark.circle.fill").font(.system(size: 14)).foregroundColor(t.mutedColor)
             }.buttonStyle(.plain)
         }
-        .padding(.horizontal, 12).padding(.vertical, 6)
+        .padding(.horizontal, 14).padding(.vertical, 8)
         .background(t.accent.opacity(0.08))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(t.surfaceBorder), alignment: .bottom)
+        .overlay(Rectangle().frame(height: 0.5).foregroundColor(t.surfaceBorder), alignment: .bottom)
     }
 }
 
@@ -206,40 +249,42 @@ struct FindReplaceBar: View {
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass").foregroundColor(t.mutedColor).font(.system(size: 11))
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass").foregroundColor(t.mutedColor).font(.system(size: 12))
 
             TextField("Find", text: $vm.findText)
-                .font(.system(size: 11, design: .monospaced))
+                .font(.system(size: 12, design: .monospaced))
                 .foregroundColor(t.textColor).tint(t.accent)
                 .autocorrectionDisabled().textInputAutocapitalization(.never)
-                .frame(width: 120)
+                .frame(minWidth: 80, maxWidth: 160)
 
             Image(systemName: "arrow.right").foregroundColor(t.mutedColor).font(.system(size: 10))
 
             TextField("Replace", text: $vm.replaceText)
-                .font(.system(size: 11, design: .monospaced))
+                .font(.system(size: 12, design: .monospaced))
                 .foregroundColor(t.textColor).tint(t.accent)
                 .autocorrectionDisabled().textInputAutocapitalization(.never)
-                .frame(width: 120)
+                .frame(minWidth: 80, maxWidth: 160)
 
             Button("Replace All") {
                 if !vm.findText.isEmpty {
                     vm.code = vm.code.replacingOccurrences(of: vm.findText, with: vm.replaceText)
                 }
             }
-            .font(.system(size: 10, design: .monospaced)).foregroundColor(t.accent)
+            .font(.system(size: 11, weight: .medium, design: .monospaced)).foregroundColor(t.accent)
+            .padding(.horizontal, 10).padding(.vertical, 5)
+            .background(Capsule().fill(t.accent.opacity(0.12)))
             .buttonStyle(.plain)
 
             Spacer()
 
             Button { vm.showFindReplace = false } label: {
-                Image(systemName: "xmark").font(.system(size: 10)).foregroundColor(t.mutedColor)
+                Image(systemName: "xmark.circle.fill").font(.system(size: 14)).foregroundColor(t.mutedColor)
             }.buttonStyle(.plain)
         }
-        .padding(.horizontal, 12).padding(.vertical, 6)
-        .background(Color.black.opacity(0.2))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(t.surfaceBorder), alignment: .bottom)
+        .padding(.horizontal, 14).padding(.vertical, 8)
+        .background(.ultraThinMaterial.opacity(0.5))
+        .overlay(Rectangle().frame(height: 0.5).foregroundColor(t.surfaceBorder), alignment: .bottom)
     }
 }
 
@@ -255,14 +300,14 @@ struct LineGutter: View {
                 ForEach(1...max(1, vm.lineCount), id: \.self) { n in
                     Text("\(n)")
                         .font(.system(size: 11, design: .monospaced))
-                        .foregroundColor(n == vm.currentLine ? t.accent : t.mutedColor.opacity(0.5))
+                        .foregroundColor(n == vm.currentLine ? t.accent : t.mutedColor.opacity(0.4))
                         .frame(height: 20, alignment: .trailing)
-                        .padding(.trailing, 8)
+                        .padding(.trailing, 10)
                 }
             }.padding(.top, 14)
         }
-        .background(Color.black.opacity(0.15))
-        .overlay(Rectangle().frame(width: 1).foregroundColor(t.surfaceBorder), alignment: .trailing)
+        .background(Color.black.opacity(0.1))
+        .overlay(Rectangle().frame(width: 0.5).foregroundColor(t.surfaceBorder), alignment: .trailing)
         .disabled(true)
     }
 }
@@ -279,11 +324,11 @@ struct CodeEditorPane: View {
                 get: { vm.code },
                 set: { vm.code = $0 }
             ))
-            .font(.system(size: 13, design: .monospaced))
+            .font(.system(size: 14, design: .monospaced))
             .foregroundColor(t.textColor)
             .scrollContentBackground(.hidden)
             .background(Color.clear)
-            .padding(.leading, 10).padding(.top, 10)
+            .padding(.leading, 12).padding(.top, 12)
             .tint(t.accent)
             .autocorrectionDisabled()
             .textInputAutocapitalization(.never)
@@ -305,34 +350,36 @@ struct AISuggestionPanel: View {
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("AI CO-PILOT", systemImage: "cpu")
-                .font(.system(size: 9, design: .monospaced))
-                .foregroundColor(t.mutedColor)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                Image(systemName: "cpu").font(.system(size: 11)).foregroundColor(t.accent)
+                Text("AI CO-PILOT")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundColor(t.mutedColor)
+            }
 
             Text(suggestion.message)
-                .font(.system(size: 12, design: .monospaced))
+                .font(.system(size: 13, design: .rounded))
                 .foregroundColor(t.textColor)
 
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 if suggestion.fix != nil {
                     Button("Apply Fix") { vm.applyFix() }
-                        .font(.system(size: 11, design: .monospaced)).foregroundColor(t.accent)
-                        .padding(.horizontal, 12).padding(.vertical, 6)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(t.accent.opacity(0.15)).overlay(RoundedRectangle(cornerRadius: 8).stroke(t.accent, lineWidth: 1)))
+                        .font(.system(size: 12, weight: .medium, design: .monospaced)).foregroundColor(t.accent)
+                        .padding(.horizontal, 14).padding(.vertical, 8)
+                        .background(Capsule().fill(t.accent.opacity(0.15)).overlay(Capsule().stroke(t.accent.opacity(0.4), lineWidth: 0.5)))
                         .buttonStyle(.plain)
                 }
                 Button("Dismiss") { vm.dismissSuggestion() }
-                    .font(.system(size: 11, design: .monospaced)).foregroundColor(t.mutedColor)
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(RoundedRectangle(cornerRadius: 8).stroke(t.surfaceBorder, lineWidth: 1))
+                    .font(.system(size: 12, design: .monospaced)).foregroundColor(t.mutedColor)
+                    .padding(.horizontal, 14).padding(.vertical, 8)
+                    .background(Capsule().stroke(t.surfaceBorder, lineWidth: 0.5))
                     .buttonStyle(.plain)
             }
         }
-        .padding(14)
-        .background(RoundedRectangle(cornerRadius: 14).fill(t.surface).background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14)).shadow(color: t.accent.opacity(0.2), radius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(t.accent.opacity(0.4), lineWidth: 1))
-        .frame(maxWidth: 280)
+        .padding(16)
+        .liquidGlass(theme: t, cornerRadius: 18, isActive: true)
+        .frame(maxWidth: 300)
     }
 }
 
@@ -343,29 +390,32 @@ struct AIResponsePanel: View {
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label("AI Response", systemImage: "cpu")
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(t.accent)
+                HStack(spacing: 6) {
+                    Image(systemName: "cpu").font(.system(size: 11)).foregroundColor(t.accent)
+                    Text("AI Response")
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundColor(t.accent)
+                }
                 Spacer()
                 Button { vm.showAIPanel = false } label: {
-                    Image(systemName: "xmark").font(.system(size: 11)).foregroundColor(t.mutedColor)
+                    Image(systemName: "xmark.circle.fill").font(.system(size: 14)).foregroundColor(t.mutedColor)
                 }.buttonStyle(.plain)
             }
 
             ScrollView {
                 Text(vm.aiResponse)
-                    .font(.system(size: 12, design: .monospaced))
+                    .font(.system(size: 13, design: .monospaced))
                     .foregroundColor(t.textColor)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .textSelection(.enabled)
             }
-            .frame(maxHeight: 140)
+            .frame(maxHeight: 160)
         }
-        .padding(12)
-        .background(t.surface)
-        .overlay(Rectangle().frame(height: 1).foregroundColor(t.surfaceBorder), alignment: .top)
+        .padding(14)
+        .background(.ultraThinMaterial.opacity(0.6))
+        .overlay(Rectangle().frame(height: 0.5).foregroundColor(t.surfaceBorder), alignment: .top)
     }
 }
 
@@ -378,80 +428,79 @@ struct EditorToolbarView: View {
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
-        HStack(spacing: 10) {
-            // AI Tools
-            Button {
-                Task {
-                    let response = await aiService.complete(
-                        prompt: "Review this code and give me the most important suggestion.",
-                        context: vm.code
-                    )
-                    vm.aiResponse = response
-                    vm.showAIPanel = true
-                }
-            } label: {
-                Label("AI", systemImage: "cpu")
-                    .font(.system(size: 11, design: .monospaced))
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                Button {
+                    Task {
+                        let response = await aiService.complete(
+                            prompt: "Review this code and give me the most important suggestion.",
+                            context: vm.code
+                        )
+                        vm.aiResponse = response
+                        vm.showAIPanel = true
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "cpu").font(.system(size: 11))
+                        Text("AI").font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    }
                     .foregroundColor(t.accent)
-                    .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(t.accent.opacity(0.15)).overlay(RoundedRectangle(cornerRadius: 8).stroke(t.accent, lineWidth: 1)))
-            }
-            .buttonStyle(.plain)
-            .shadow(color: vm.aiPulsing ? t.accent.opacity(0.7) : .clear, radius: vm.aiPulsing ? 12 : 0)
-
-            // Find/Replace
-            Button {
-                withAnimation { vm.showFindReplace.toggle() }
-            } label: {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 13))
-                    .foregroundColor(vm.showFindReplace ? t.accent : t.mutedColor)
-            }.buttonStyle(.plain)
-
-            // Save
-            Button {
-                vm.saveActiveTab(using: folderManager)
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "square.and.arrow.down")
-                    Text("Save")
+                    .glassButton(theme: t, isActive: true)
                 }
-                .font(.system(size: 11, design: .monospaced))
-                .foregroundColor(vm.activeTab?.isDirty == true ? t.accent : t.mutedColor)
-                .padding(.horizontal, 10).padding(.vertical, 6)
-                .background(RoundedRectangle(cornerRadius: 8).stroke(t.surfaceBorder, lineWidth: 1))
-            }.buttonStyle(.plain)
+                .buttonStyle(.plain)
+                .shadow(color: vm.aiPulsing ? t.accent.opacity(0.7) : .clear, radius: vm.aiPulsing ? 12 : 0)
 
-            // Export
-            Button { vm.showExportPanel = true } label: {
-                Label("Export", systemImage: "square.and.arrow.up")
-                    .font(.system(size: 11, design: .monospaced))
+                Button {
+                    withAnimation { vm.showFindReplace.toggle() }
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 13))
+                        .foregroundColor(vm.showFindReplace ? t.accent : t.mutedColor)
+                        .glassButton(theme: t, isActive: vm.showFindReplace)
+                }.buttonStyle(.plain)
+
+                Button {
+                    vm.saveActiveTab(using: folderManager)
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "square.and.arrow.down").font(.system(size: 11))
+                        Text("Save").font(.system(size: 11, design: .monospaced))
+                    }
+                    .foregroundColor(vm.activeTab?.isDirty == true ? t.accent : t.mutedColor)
+                    .glassButton(theme: t, isActive: vm.activeTab?.isDirty == true)
+                }.buttonStyle(.plain)
+
+                Button { vm.showExportPanel = true } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "square.and.arrow.up").font(.system(size: 11))
+                        Text("Export").font(.system(size: 11, design: .monospaced))
+                    }
                     .foregroundColor(t.mutedColor)
-                    .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(RoundedRectangle(cornerRadius: 8).stroke(t.surfaceBorder, lineWidth: 1))
-            }.buttonStyle(.plain)
+                    .glassButton(theme: t)
+                }.buttonStyle(.plain)
 
-            Spacer()
+                Spacer()
 
-            // Language indicator
-            if let tab = vm.activeTab {
-                Text(tab.language.uppercased())
-                    .font(.system(size: 9, design: .monospaced))
-                    .foregroundColor(t.mutedColor)
+                if let tab = vm.activeTab {
+                    Text(tab.language.uppercased())
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .foregroundColor(t.accent.opacity(0.7))
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(Capsule().fill(t.accent.opacity(0.1)))
+                }
+
+                HStack(spacing: 5) {
+                    Circle().fill(t.accent).frame(width: 6, height: 6)
+                        .shadow(color: t.accent.opacity(0.8), radius: vm.performanceMode ? 0 : 5)
+                    Text("Flow")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundColor(t.accent)
+                }
             }
-
-            // Flow state dot
-            HStack(spacing: 5) {
-                Circle().fill(t.accent).frame(width: 6, height: 6)
-                    .shadow(color: t.accent.opacity(0.8), radius: vm.performanceMode ? 0 : 5)
-                Text("Flow")
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(t.accent)
-            }
+            .padding(.horizontal, 14)
         }
-        .padding(.horizontal, 12)
-        .frame(height: 42)
-        .background(t.surface)
-        .overlay(Rectangle().frame(height: 1).foregroundColor(t.surfaceBorder), alignment: .top)
+        .frame(height: 46)
+        .background(.ultraThinMaterial.opacity(0.5))
+        .overlay(Rectangle().frame(height: 0.5).foregroundColor(t.surfaceBorder), alignment: .top)
     }
 }
