@@ -458,6 +458,7 @@ struct EditorToolbarView: View {
     @StateObject private var aiService = AIService()
     @State private var showCommitAlert = false
     @State private var commitMessage = ""
+    @State private var showWebPreview = false
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
@@ -530,6 +531,25 @@ struct EditorToolbarView: View {
                 .buttonStyle(.plain)
             }
 
+            if let tab = vm.activeTab, isWebFile(tab.language) {
+                Button {
+                    showWebPreview = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "safari")
+                        Text("Preview")
+                    }
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 10).padding(.vertical, 7)
+                    .glassPill(color: .blue, isActive: true)
+                }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showWebPreview) {
+                    HTMLPreviewView(html: vm.code, fileName: tab.name, theme: t)
+                }
+            }
+
             Spacer()
 
             if let tab = vm.activeTab {
@@ -578,5 +598,9 @@ struct EditorToolbarView: View {
         } message: {
             Text("Push '\(vm.activeTab?.name ?? "file")' to \(github.selectedRepo?.name ?? "repo")")
         }
+    }
+
+    private func isWebFile(_ language: String) -> Bool {
+        ["html", "htm", "svg"].contains(language.lowercased())
     }
 }
