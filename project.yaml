@@ -30,9 +30,9 @@ targets:
           - "**/.DS_Store"
           - "**/Info.plist"
       - path: Shared
-    dependencies:
-      - target: ParadiseIDEWidgetExtension
-        embed: true
+    # dependencies:
+    #   - target: ParadiseIDEWidgetExtension
+    #     embed: true
     info:
       path: ParadiseIDE/Info.plist
       properties:
@@ -106,7 +106,6 @@ schemes:
     build:
       targets:
         ParadiseIDE: all
-        ParadiseIDEWidgetExtension: all
     run:
       config: Debug
     profile:
