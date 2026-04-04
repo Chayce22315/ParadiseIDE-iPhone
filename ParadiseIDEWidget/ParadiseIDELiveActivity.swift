@@ -2,11 +2,9 @@ import SwiftUI
 import WidgetKit
 import ActivityKit
 
-@available(iOS 16.2, *)
 struct ParadiseIDELiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: ParadiseIDEAttributes.self) { context in
-            // Lock screen / banner view
             LockScreenView(context: context)
         } dynamicIsland: { context in
             DynamicIsland {
@@ -79,7 +77,6 @@ struct ParadiseIDELiveActivity: Widget {
     }
 }
 
-@available(iOS 16.2, *)
 struct LockScreenView: View {
     let context: ActivityViewContext<ParadiseIDEAttributes>
 
@@ -113,7 +110,6 @@ struct LockScreenView: View {
     }
 }
 
-@available(iOS 16.2, *)
 struct StatLabel: View {
     let value: String
     let label: String

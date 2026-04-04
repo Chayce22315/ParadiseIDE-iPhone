@@ -30,9 +30,9 @@ targets:
           - "**/.DS_Store"
           - "**/Info.plist"
       - path: Shared
-    # dependencies:
-    #   - target: ParadiseIDEWidgetExtension
-    #     embed: true
+    dependencies:
+      - target: ParadiseIDEWidgetExtension
+        embed: true
     info:
       path: ParadiseIDE/Info.plist
       properties:
@@ -92,6 +92,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.paradise.ide.widget
         PRODUCT_MODULE_NAME: ParadiseIDEWidget
+        PRODUCT_NAME: ParadiseIDEWidget
+        SKIP_INSTALL: YES
         CODE_SIGN_STYLE: Manual
         CODE_SIGNING_REQUIRED: NO
         CODE_SIGNING_ALLOWED: NO
@@ -106,6 +108,7 @@ schemes:
     build:
       targets:
         ParadiseIDE: all
+        ParadiseIDEWidgetExtension: all
     run:
       config: Debug
     profile:
