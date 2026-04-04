@@ -30,9 +30,11 @@ targets:
           - "**/.DS_Store"
           - "**/Info.plist"
       - path: Shared
-    dependencies:
-      - target: ParadiseIDEWidgetExtension
-        embed: true
+    # Widget extension disabled for sideloading - Sideloadly can't resolve appex executable paths
+    # Re-enable when using Xcode direct install or a paid developer account
+    # dependencies:
+    #   - target: ParadiseIDEWidgetExtension
+    #     embed: true
     info:
       path: ParadiseIDE/Info.plist
       properties:
@@ -108,7 +110,6 @@ schemes:
     build:
       targets:
         ParadiseIDE: all
-        ParadiseIDEWidgetExtension: all
     run:
       config: Debug
     profile:
