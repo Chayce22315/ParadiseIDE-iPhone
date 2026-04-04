@@ -4,7 +4,6 @@ struct VirtualPetView: View {
     @EnvironmentObject var vm: EditorViewModel
     var t: ParadiseTheme { vm.theme }
 
-    // Drive animation from mood
     @State private var bounceOffset: CGFloat = 0
     @State private var rotation: Double = 0
     @State private var scale: CGFloat = 1.0
@@ -15,13 +14,27 @@ struct VirtualPetView: View {
                 vm.petTapped()
             } label: {
                 Text(t.petEmoji)
-                    .font(.system(size: 24))
-                    .frame(width: 44, height: 44)
+                    .font(.system(size: 22))
+                    .frame(width: 40, height: 40)
                     .background(
                         Circle()
-                            .fill(t.surface)
-                            .overlay(Circle().stroke(t.surfaceBorder, lineWidth: 1.5))
-                            .shadow(color: t.accent.opacity(0.25), radius: 10)
+                            .fill(.ultraThinMaterial)
+                            .overlay(
+                                Circle()
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [
+                                                Color.white.opacity(0.2),
+                                                t.accent.opacity(0.15),
+                                                Color.white.opacity(0.08)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 0.7
+                                    )
+                            )
+                            .shadow(color: t.accent.opacity(0.2), radius: 8)
                     )
                     .offset(y: bounceOffset)
                     .rotationEffect(.degrees(rotation))
@@ -55,21 +68,21 @@ struct VirtualPetView: View {
         switch mood {
         case .idle:
             withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) {
-                bounceOffset = -6
+                bounceOffset = -5
             }
         case .typing:
             withAnimation(.easeInOut(duration: 0.25).repeatForever(autoreverses: true)) {
-                rotation = 8
+                rotation = 6
             }
         case .ai:
             withAnimation(.spring(response: 0.4, dampingFraction: 0.5).repeatCount(4, autoreverses: true)) {
-                bounceOffset = -12
+                bounceOffset = -10
                 scale = 1.1
             }
         case .error:
             withAnimation(.easeInOut(duration: 0.5).repeatCount(3, autoreverses: true)) {
-                rotation = 12
-                scale = 1.15
+                rotation = 10
+                scale = 1.12
             }
         case .happy:
             withAnimation(.linear(duration: 0.5).repeatForever(autoreverses: false)) {

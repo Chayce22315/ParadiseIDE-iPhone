@@ -84,12 +84,19 @@ final class EditorViewModel: ObservableObject {
     @Published var showErrorToast: Bool = false
     @Published var showExportPanel: Bool = false
     @Published var showFindReplace: Bool = false
+    @Published var showSettingsPanel: Bool = false
+    @Published var showSnippetsPanel: Bool = false
     @Published var findText: String = ""
     @Published var replaceText: String = ""
 
     // AI response
     @Published var aiResponse: String = ""
     @Published var showAIPanel: Bool = false
+
+    // Computed stats
+    var wordCount: Int {
+        code.split(whereSeparator: { $0.isWhitespace || $0.isNewline }).count
+    }
 
     private var typingWorkItem: DispatchWorkItem?
 

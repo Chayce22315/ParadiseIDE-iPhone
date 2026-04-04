@@ -5,50 +5,59 @@ struct ContentView: View {
     @EnvironmentObject var folderManager: FolderManager
     @State private var sidebarVisible = true
     @State private var terminalVisible = false
-    @State private var terminalHeight: CGFloat = 280
+    @State private var terminalHeight: CGFloat = 320
 
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
-        ZStack {
-            LinearGradient(colors: t.backgroundColors, startPoint: .topLeading, endPoint: .bottomTrailing)
-                .ignoresSafeArea()
-                .animation(vm.performanceMode ? nil : .easeInOut(duration: 1.2), value: vm.theme.id)
+        GeometryReader { geo in
+            let isLargePhone = geo.size.height > 800
 
-            if !vm.performanceMode { ParticleLayerView().ignoresSafeArea() }
+            ZStack {
+                LinearGradient(colors: t.backgroundColors, startPoint: .topLeading, endPoint: .bottomTrailing)
+                    .ignoresSafeArea()
+                    .animation(vm.performanceMode ? nil : .easeInOut(duration: 1.2), value: vm.theme.id)
 
-            VStack(spacing: 0) {
-                TopBarView(sidebarVisible: $sidebarVisible, terminalVisible: $terminalVisible)
+                if !vm.performanceMode { ParticleLayerView().ignoresSafeArea() }
 
-                HStack(spacing: 0) {
-                    if sidebarVisible {
-                        FileTreeView()
-                            .frame(width: 200)
-                            .transition(.move(edge: .leading).combined(with: .opacity))
+                VStack(spacing: 0) {
+                    DynamicIslandBannerView()
+                        .padding(.top, isLargePhone ? 4 : 2)
+
+                    TopBarView(sidebarVisible: $sidebarVisible, terminalVisible: $terminalVisible)
+
+                    HStack(spacing: 0) {
+                        if sidebarVisible {
+                            FileTreeView()
+                                .frame(width: isLargePhone ? 220 : 180)
+                                .transition(.move(edge: .leading).combined(with: .opacity))
+                        }
+
+                        EditorView()
+
+                        if isLargePhone {
+                            RightPanelView()
+                                .frame(width: 200)
+                        }
                     }
 
-                    EditorView()
-
-                    RightPanelView()
-                        .frame(width: 190)
-                }
-
-                if terminalVisible {
-                    VStack(spacing: 0) {
-                        TerminalPanelHeader(terminalHeight: $terminalHeight, terminalVisible: $terminalVisible, theme: t)
-                        TerminalView()
-                            .frame(height: terminalHeight)
+                    if terminalVisible {
+                        VStack(spacing: 0) {
+                            TerminalPanelHeader(terminalHeight: $terminalHeight, terminalVisible: $terminalVisible, theme: t)
+                            TerminalView()
+                                .frame(height: min(terminalHeight, geo.size.height * 0.4))
+                        }
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+
+                    StatusBarView()
                 }
 
-                StatusBarView()
-            }
-
-            if vm.showErrorToast {
-                ErrorToastView()
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .zIndex(10)
+                if vm.showErrorToast {
+                    ErrorToastView()
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .zIndex(10)
+                }
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: sidebarVisible)
@@ -56,6 +65,12 @@ struct ContentView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.showErrorToast)
         .sheet(isPresented: $vm.showExportPanel) {
             ExportView().environmentObject(vm)
+        }
+        .sheet(isPresented: $vm.showSettingsPanel) {
+            AppSettingsView().environmentObject(vm)
+        }
+        .sheet(isPresented: $vm.showSnippetsPanel) {
+            SnippetsLibraryView().environmentObject(vm)
         }
     }
 }
@@ -67,11 +82,11 @@ struct TerminalPanelHeader: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            RoundedRectangle(cornerRadius: 2).fill(theme.mutedColor.opacity(0.4)).frame(width: 36, height: 4).padding(.leading, 12)
+            Capsule().fill(theme.mutedColor.opacity(0.4)).frame(width: 36, height: 4).padding(.leading, 12)
             Image(systemName: "terminal").font(.system(size: 11)).foregroundColor(theme.mutedColor)
             Text("TERMINAL").font(.system(size: 10, design: .monospaced)).foregroundColor(theme.mutedColor)
             Spacer()
-            ForEach([("S", 180.0), ("M", 280.0), ("L", 420.0)], id: \.0) { label, h in
+            ForEach([("S", 200.0), ("M", 320.0), ("L", 480.0)], id: \.0) { label, h in
                 Button(label) {
                     withAnimation(.spring(response: 0.3)) { terminalHeight = h }
                 }
@@ -83,12 +98,12 @@ struct TerminalPanelHeader: View {
                 Image(systemName: "xmark").font(.system(size: 11)).foregroundColor(theme.mutedColor)
             }.buttonStyle(.plain).padding(.trailing, 12)
         }
-        .frame(height: 30)
-        .background(Color.black.opacity(0.55))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(theme.surfaceBorder), alignment: .top)
+        .frame(height: 32)
+        .liquidGlassToolbar(theme: theme)
+        .overlay(Rectangle().frame(height: 0.5).foregroundColor(theme.surfaceBorder), alignment: .top)
         .gesture(DragGesture().onChanged { value in
             let newHeight = terminalHeight - value.translation.height
-            terminalHeight = max(140, min(560, newHeight))
+            terminalHeight = max(160, min(600, newHeight))
         })
     }
 }

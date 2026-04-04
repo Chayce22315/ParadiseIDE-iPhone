@@ -55,7 +55,8 @@ struct TerminalView: View {
                 .frame(width: 180)
             }
         }
-        .background(Color.black.opacity(0.45))
+        .background(Color.black.opacity(0.35))
+        .background(.ultraThinMaterial)
         .onAppear {
             bridge.host = "localhost"
             bridge.port = "8765"
@@ -158,9 +159,10 @@ struct TerminalTopBar: View {
             }.buttonStyle(.plain)
         }
         .padding(.horizontal, 12)
-        .frame(height: 36)
-        .background(Color.black.opacity(0.5))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(theme.surfaceBorder), alignment: .bottom)
+        .frame(height: 38)
+        .background(Color.black.opacity(0.4))
+        .background(.ultraThinMaterial)
+        .overlay(Rectangle().frame(height: 0.5).foregroundColor(theme.surfaceBorder), alignment: .bottom)
     }
 }
 
@@ -290,9 +292,10 @@ struct InputBar: View {
             .buttonStyle(.plain)
             .disabled(input.isEmpty || !bridge.state.isConnected)
         }
-        .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(Color.black.opacity(0.55))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(theme.surfaceBorder), alignment: .top)
+        .padding(.horizontal, 12).padding(.vertical, 10)
+        .background(Color.black.opacity(0.45))
+        .background(.ultraThinMaterial)
+        .overlay(Rectangle().frame(height: 0.5).foregroundColor(theme.surfaceBorder), alignment: .top)
         .onTapGesture { isFocused.wrappedValue = true }
     }
 }

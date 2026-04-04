@@ -10,33 +10,30 @@ struct TopBarView: View {
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
 
             Button { withAnimation { sidebarVisible.toggle() } } label: {
                 Image(systemName: "sidebar.left")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(t.mutedColor)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(sidebarVisible ? t.accent : t.mutedColor)
+                    .padding(6)
+                    .glassPill(color: t.accent, isActive: sidebarVisible)
             }.buttonStyle(.plain)
 
             Text("Paradise IDE")
-                .font(.system(size: 14, weight: .medium, design: .serif))
+                .font(.system(size: 15, weight: .semibold, design: .serif))
                 .italic().foregroundColor(t.accent)
 
             Button { showingPicker = true } label: {
-                HStack(spacing: 4) {
+                HStack(spacing: 5) {
                     Image(systemName: "folder").font(.system(size: 11))
                     Text(folderManager.rootName)
                         .font(.system(size: 10, design: .monospaced))
                         .lineLimit(1)
                 }
                 .foregroundColor(folderManager.rootURL != nil ? t.accent : t.mutedColor)
-                .padding(.horizontal, 8).padding(.vertical, 4)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(folderManager.rootURL != nil ? t.accent.opacity(0.12) : Color.clear)
-                        .overlay(RoundedRectangle(cornerRadius: 20)
-                            .stroke(folderManager.rootURL != nil ? t.accent : t.surfaceBorder, lineWidth: 1))
-                )
+                .padding(.horizontal, 10).padding(.vertical, 5)
+                .glassPill(color: t.accent, isActive: folderManager.rootURL != nil)
             }
             .buttonStyle(.plain)
             .fullScreenCover(isPresented: $showingPicker) {
@@ -54,45 +51,55 @@ struct TopBarView: View {
 
             Spacer()
 
-            HStack(spacing: 6) {
-                ForEach(ParadiseTheme.all) { theme in
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.6)) { vm.theme = theme }
-                    } label: {
-                        Circle().fill(theme.accent).frame(width: 14, height: 14)
-                            .overlay(Circle().stroke(vm.theme == theme ? theme.accent : Color.clear, lineWidth: 2).padding(-3))
-                            .shadow(color: vm.theme == theme ? theme.accent.opacity(0.6) : .clear, radius: 5)
-                            .scaleEffect(vm.theme == theme ? 1.2 : 1.0)
-                            .animation(.spring(response: 0.3), value: vm.theme == theme)
-                    }.buttonStyle(.plain)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(ParadiseTheme.all) { theme in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.6)) { vm.theme = theme }
+                        } label: {
+                            Circle().fill(theme.accent).frame(width: 16, height: 16)
+                                .overlay(
+                                    Circle()
+                                        .stroke(vm.theme == theme ? .white.opacity(0.8) : Color.clear, lineWidth: 2)
+                                        .padding(-3)
+                                )
+                                .shadow(color: vm.theme == theme ? theme.accent.opacity(0.6) : .clear, radius: 6)
+                                .scaleEffect(vm.theme == theme ? 1.15 : 1.0)
+                                .animation(.spring(response: 0.3), value: vm.theme == theme)
+                        }.buttonStyle(.plain)
+                    }
                 }
             }
 
-            Button { vm.performanceMode.toggle() } label: {
-                Text("PERF")
-                    .font(.system(size: 9, design: .monospaced))
-                    .foregroundColor(vm.performanceMode ? t.accent : t.mutedColor)
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 20)
-                        .fill(vm.performanceMode ? t.accent.opacity(0.15) : Color.clear)
-                        .overlay(RoundedRectangle(cornerRadius: 20)
-                            .stroke(vm.performanceMode ? t.accent : t.surfaceBorder, lineWidth: 1)))
-            }.buttonStyle(.plain)
+            HStack(spacing: 6) {
+                Button { vm.performanceMode.toggle() } label: {
+                    Image(systemName: vm.performanceMode ? "hare.fill" : "hare")
+                        .font(.system(size: 12))
+                        .foregroundColor(vm.performanceMode ? t.accent : t.mutedColor)
+                        .padding(.horizontal, 8).padding(.vertical, 5)
+                        .glassPill(color: t.accent, isActive: vm.performanceMode)
+                }.buttonStyle(.plain)
 
-            Button { withAnimation { terminalVisible.toggle() } } label: {
-                Image(systemName: "terminal")
-                    .font(.system(size: 13))
-                    .foregroundColor(terminalVisible ? t.accent : t.mutedColor)
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 20)
-                        .fill(terminalVisible ? t.accent.opacity(0.15) : Color.clear)
-                        .overlay(RoundedRectangle(cornerRadius: 20)
-                            .stroke(terminalVisible ? t.accent : t.surfaceBorder, lineWidth: 1)))
-            }.buttonStyle(.plain)
+                Button { withAnimation { terminalVisible.toggle() } } label: {
+                    Image(systemName: "terminal")
+                        .font(.system(size: 13))
+                        .foregroundColor(terminalVisible ? t.accent : t.mutedColor)
+                        .padding(.horizontal, 8).padding(.vertical, 5)
+                        .glassPill(color: t.accent, isActive: terminalVisible)
+                }.buttonStyle(.plain)
+
+                Button { vm.showSettingsPanel = true } label: {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 13))
+                        .foregroundColor(t.mutedColor)
+                        .padding(.horizontal, 8).padding(.vertical, 5)
+                        .glassPill(color: t.accent)
+                }.buttonStyle(.plain)
+            }
         }
-        .padding(.horizontal, 12)
-        .frame(height: 46)
-        .background(t.surface.background(.ultraThinMaterial).ignoresSafeArea(edges: .top))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(t.surfaceBorder), alignment: .bottom)
+        .padding(.horizontal, 14)
+        .frame(height: 50)
+        .liquidGlassToolbar(theme: t)
+        .overlay(Rectangle().frame(height: 0.5).foregroundColor(t.surfaceBorder), alignment: .bottom)
     }
 }
