@@ -84,8 +84,9 @@ targets:
     deploymentTarget: "16.2"
     sources:
       - path: ParadiseIDEWidget
+        excludes:
+          - "**/Info.plist"
     info:
-      path: ParadiseIDEWidget/Info.plist
       properties:
         CFBundleDisplayName: Paradise IDE Widget
         CFBundleIdentifier: com.paradise.ide.widget
