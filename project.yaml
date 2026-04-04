@@ -32,6 +32,7 @@ targets:
       - path: Shared
     dependencies:
       - target: ParadiseIDEWidgetExtension
+        embed: true
     info:
       path: ParadiseIDE/Info.plist
       properties:
@@ -83,7 +84,6 @@ targets:
     deploymentTarget: "16.2"
     sources:
       - path: ParadiseIDEWidget
-      - path: Shared
     info:
       path: ParadiseIDEWidget/Info.plist
       properties:
@@ -97,6 +97,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.paradise.ide.widget
+        PRODUCT_MODULE_NAME: ParadiseIDEWidget
         CODE_SIGN_STYLE: Manual
         CODE_SIGNING_REQUIRED: NO
         CODE_SIGNING_ALLOWED: NO
