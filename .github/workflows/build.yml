@@ -2,7 +2,7 @@ name: Paradise IDE - Build and Package IPA
 
 on:
   push:
-    branches: [main, release/*]
+    branches: [main, release/*, cursor/*]
   pull_request:
     branches: [main]
   workflow_dispatch:
