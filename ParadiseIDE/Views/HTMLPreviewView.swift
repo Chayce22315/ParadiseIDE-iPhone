@@ -37,7 +37,7 @@ struct HTMLPreviewView: View {
         }
     }
 
-    private func openInDefaultBrowser() {
+    @MainActor private func openInDefaultBrowser() {
         let previewDir = FolderManager.paradiseDocumentsURL
         let fileURL = previewDir.appendingPathComponent(fileName.isEmpty ? "preview.html" : fileName)
         try? html.write(to: fileURL, atomically: true, encoding: .utf8)
