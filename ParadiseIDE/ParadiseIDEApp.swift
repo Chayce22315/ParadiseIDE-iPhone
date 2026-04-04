@@ -11,6 +11,9 @@ struct ParadiseIDEApp: App {
                 .environmentObject(editorVM)
                 .environmentObject(folderManager)
                 .preferredColorScheme(.dark)
+                .onAppear {
+                    AppIconExporter.generateIfNeeded()
+                }
         }
     }
 }

@@ -63,6 +63,18 @@ struct ContentView: View {
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: sidebarVisible)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: terminalVisible)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: vm.showErrorToast)
+        .fullScreenCover(isPresented: $folderManager.showPicker) {
+            FolderPicker(
+                onPick: { url in
+                    folderManager.showPicker = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        folderManager.openFolder(url)
+                    }
+                },
+                onCancel: { folderManager.showPicker = false }
+            )
+            .ignoresSafeArea()
+        }
         .sheet(isPresented: $vm.showExportPanel) {
             ExportView().environmentObject(vm)
         }

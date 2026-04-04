@@ -5,7 +5,6 @@ struct TopBarView: View {
     @EnvironmentObject var folderManager: FolderManager
     @Binding var sidebarVisible: Bool
     @Binding var terminalVisible: Bool
-    @State private var showingPicker = false
 
     var t: ParadiseTheme { vm.theme }
 
@@ -24,7 +23,7 @@ struct TopBarView: View {
                 .font(.system(size: 15, weight: .semibold, design: .serif))
                 .italic().foregroundColor(t.accent)
 
-            Button { showingPicker = true } label: {
+            Button { folderManager.showPicker = true } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "folder").font(.system(size: 11))
                     Text(folderManager.rootName)
@@ -36,18 +35,6 @@ struct TopBarView: View {
                 .glassPill(color: t.accent, isActive: folderManager.rootURL != nil)
             }
             .buttonStyle(.plain)
-            .fullScreenCover(isPresented: $showingPicker) {
-                FolderPicker(
-                    onPick: { url in
-                        showingPicker = false
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            folderManager.openFolder(url)
-                        }
-                    },
-                    onCancel: { showingPicker = false }
-                )
-                .ignoresSafeArea()
-            }
 
             Spacer()
 

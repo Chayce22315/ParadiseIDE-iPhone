@@ -62,6 +62,7 @@ targets:
           - "_paradise._tcp"
         UIFileSharingEnabled: true
         LSSupportsOpeningDocumentsInPlace: true
+        NSSupportsLiveActivities: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.paradise.ide

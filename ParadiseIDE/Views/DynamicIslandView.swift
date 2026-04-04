@@ -65,6 +65,7 @@ final class DynamicIslandManager: ObservableObject {
 
 struct DynamicIslandBannerView: View {
     @EnvironmentObject var vm: EditorViewModel
+    @EnvironmentObject var folderManager: FolderManager
     @ObservedObject var islandManager = DynamicIslandManager.shared
     @State private var expanded = false
     @State private var pulseAnimation = false
@@ -123,6 +124,19 @@ struct DynamicIslandBannerView: View {
                 .foregroundColor(statusColor)
                 .shadow(color: statusColor.opacity(0.6), radius: pulseAnimation ? 4 : 0)
 
+            if folderManager.rootURL != nil {
+                Image(systemName: "folder.fill")
+                    .font(.system(size: 8))
+                    .foregroundColor(t.accent.opacity(0.6))
+                Text(folderManager.rootName)
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.6))
+                    .lineLimit(1)
+
+                Text("·")
+                    .foregroundColor(.white.opacity(0.3))
+            }
+
             if let tab = vm.activeTab {
                 Text(tab.name)
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
@@ -152,6 +166,7 @@ struct DynamicIslandBannerView: View {
 
     private var expandedIsland: some View {
         VStack(spacing: 10) {
+            // Top row: file info + language badge
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 5) {
@@ -183,15 +198,37 @@ struct DynamicIslandBannerView: View {
                 }
             }
 
-            HStack(spacing: 16) {
+            // Folder info row
+            if folderManager.rootURL != nil {
+                HStack(spacing: 6) {
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 9))
+                        .foregroundColor(t.accent.opacity(0.7))
+                    Text(folderManager.rootName)
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.8))
+                        .lineLimit(1)
+                    Spacer()
+                    Text("\(folderManager.totalFileCount) files")
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.5))
+                }
+                .padding(.horizontal, 4)
+            }
+
+            // Stats row
+            HStack(spacing: 12) {
                 IslandStatPill(icon: "doc.text", value: "\(vm.lineCount)", label: "lines", color: t.accent)
                 IslandStatPill(icon: "character.cursor.ibeam", value: "\(vm.code.count)", label: "chars", color: t.accent2)
                 IslandStatPill(icon: "square.on.square", value: "\(vm.tabs.count)", label: "tabs", color: .green)
+                IslandStatPill(icon: "doc.on.doc", value: "\(folderManager.totalFileCount)", label: "files", color: .cyan)
+                IslandStatPill(icon: "arrow.triangle.branch", value: "\(folderManager.commitCount)", label: "saves", color: .orange)
                 if vm.showAIPanel {
                     IslandStatPill(icon: "cpu", value: "ON", label: "AI", color: .purple)
                 }
             }
 
+            // Typing progress
             if vm.petMood == .typing {
                 ProgressView(value: Double(vm.lineCount % 50) / 50.0)
                     .tint(t.accent)
@@ -199,7 +236,7 @@ struct DynamicIslandBannerView: View {
             }
         }
         .padding(14)
-        .frame(maxWidth: 320)
+        .frame(maxWidth: 340)
         .background(
             RoundedRectangle(cornerRadius: 22)
                 .fill(Color.black.opacity(0.9))

@@ -123,6 +123,8 @@ final class FolderManager: ObservableObject {
     @Published var rootName: String = "No folder"
     @Published var showPicker: Bool = false
     @Published var errorMessage: String? = nil
+    @Published var totalFileCount: Int = 0
+    @Published var commitCount: Int = 0
 
     private let bookmarkKey = "paradise.folderBookmark.v3"
 
@@ -158,7 +160,8 @@ final class FolderManager: ObservableObject {
         loadChildren(of: node)
         node.isExpanded = true
         rootNode = node
-        print("Paradise: loaded folder \(url.path) with \(node.children?.count ?? 0) items")
+        totalFileCount = countFiles(in: url)
+        print("Paradise: loaded folder \(url.path) with \(node.children?.count ?? 0) items, \(totalFileCount) total files")
     }
 
     func loadChildren(of node: FileNode) {
@@ -187,6 +190,28 @@ final class FolderManager: ObservableObject {
     func refresh() {
         guard let url = rootURL else { return }
         loadFolder(url)
+    }
+
+    func countFiles(in url: URL) -> Int {
+        let fm = FileManager.default
+        guard let enumerator = fm.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles]
+        ) else { return 0 }
+
+        var count = 0
+        for case let fileURL as URL in enumerator {
+            if let values = try? fileURL.resourceValues(forKeys: [.isRegularFileKey]),
+               values.isRegularFile == true {
+                count += 1
+            }
+        }
+        return count
+    }
+
+    func countSaveActions() {
+        commitCount += 1
     }
 
     func clearFolder() {

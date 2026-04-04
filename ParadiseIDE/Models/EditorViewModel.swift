@@ -172,6 +172,7 @@ final class EditorViewModel: ObservableObject {
         if let url = tab.url {
             try? folderManager.writeFile(url, content: tab.content)
             tabs[idx].isDirty = false
+            folderManager.countSaveActions()
             petMood = .happy
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
                 self?.petMood = .idle
