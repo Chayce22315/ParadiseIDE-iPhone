@@ -120,7 +120,10 @@ struct FloatModifier: ViewModifier {
 
 struct AppSettingsView: View {
     @EnvironmentObject var vm: EditorViewModel
+    @EnvironmentObject var github: GitHubService
     @Environment(\.dismiss) private var dismiss
+    @State private var tokenInput = ""
+    @State private var showTokenEntry = false
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
@@ -215,6 +218,172 @@ struct AppSettingsView: View {
                                 }
                                 .buttonStyle(.plain)
                             }
+                        }
+
+                        // MARK: GitHub
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("GITHUB")
+                                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                .foregroundColor(t.mutedColor)
+                                .tracking(1.5)
+
+                            if github.isSignedIn {
+                                VStack(spacing: 12) {
+                                    if let user = github.user {
+                                        HStack(spacing: 12) {
+                                            AsyncImage(url: URL(string: user.avatarURL)) { image in
+                                                image.resizable()
+                                                    .aspectRatio(contentMode: .fill)
+                                            } placeholder: {
+                                                Circle().fill(t.accent.opacity(0.2))
+                                            }
+                                            .frame(width: 40, height: 40)
+                                            .clipShape(Circle())
+                                            .overlay(Circle().stroke(t.accent.opacity(0.3), lineWidth: 1))
+
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(user.name ?? user.login)
+                                                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                                                    .foregroundColor(t.textColor)
+                                                Text("@\(user.login)")
+                                                    .font(.system(size: 11, design: .monospaced))
+                                                    .foregroundColor(t.mutedColor)
+                                            }
+                                            Spacer()
+                                            VStack(alignment: .trailing, spacing: 2) {
+                                                Text("\(user.publicRepos)")
+                                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                                    .foregroundColor(t.accent)
+                                                Text("repos")
+                                                    .font(.system(size: 9, design: .monospaced))
+                                                    .foregroundColor(t.mutedColor)
+                                            }
+                                        }
+                                        .padding(12)
+                                        .liquidGlassCard(theme: t, cornerRadius: 12)
+                                    }
+
+                                    if github.commitStats.totalCommits > 0 {
+                                        HStack(spacing: 16) {
+                                            GitStatBadge(value: "\(github.commitStats.totalCommits)", label: "commits", icon: "arrow.triangle.branch", color: t.accent, theme: t)
+                                            GitStatBadge(value: "\(github.commitStats.todayCommits)", label: "today", icon: "sun.max.fill", color: .orange, theme: t)
+                                            GitStatBadge(value: "\(github.commitStats.weekCommits)", label: "this week", icon: "calendar", color: .green, theme: t)
+                                        }
+                                    }
+
+                                    if !github.repos.isEmpty {
+                                        VStack(alignment: .leading, spacing: 6) {
+                                            Text("SELECT REPO")
+                                                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                                .foregroundColor(t.mutedColor)
+                                                .tracking(1)
+
+                                            ScrollView(.horizontal, showsIndicators: false) {
+                                                HStack(spacing: 8) {
+                                                    ForEach(github.repos.prefix(10)) { repo in
+                                                        Button {
+                                                            github.selectRepo(repo)
+                                                        } label: {
+                                                            VStack(alignment: .leading, spacing: 3) {
+                                                                Text(repo.name)
+                                                                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                                                    .foregroundColor(github.selectedRepo?.id == repo.id ? t.accent : t.textColor)
+                                                                    .lineLimit(1)
+                                                                HStack(spacing: 4) {
+                                                                    if let lang = repo.language {
+                                                                        Text(lang)
+                                                                            .font(.system(size: 8, design: .monospaced))
+                                                                            .foregroundColor(t.mutedColor)
+                                                                    }
+                                                                    Image(systemName: "star.fill").font(.system(size: 7)).foregroundColor(.yellow)
+                                                                    Text("\(repo.stargazersCount)")
+                                                                        .font(.system(size: 8, design: .monospaced))
+                                                                        .foregroundColor(t.mutedColor)
+                                                                }
+                                                            }
+                                                            .padding(.horizontal, 10).padding(.vertical, 8)
+                                                            .liquidGlass(
+                                                                cornerRadius: 8,
+                                                                tint: github.selectedRepo?.id == repo.id ? t.accent : .white,
+                                                                intensity: github.selectedRepo?.id == repo.id ? 2 : 0.5,
+                                                                borderOpacity: github.selectedRepo?.id == repo.id ? 0.3 : 0.1
+                                                            )
+                                                        }
+                                                        .buttonStyle(.plain)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Button {
+                                        github.signOut()
+                                    } label: {
+                                        HStack {
+                                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                            Text("Sign Out")
+                                        }
+                                        .font(.system(size: 12, design: .monospaced))
+                                        .foregroundColor(.red.opacity(0.8))
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 10)
+                                        .liquidGlass(cornerRadius: 10, tint: .red, intensity: 0.5, borderOpacity: 0.15)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            } else {
+                                VStack(spacing: 12) {
+                                    VStack(spacing: 6) {
+                                        Image(systemName: "arrow.triangle.branch")
+                                            .font(.system(size: 28))
+                                            .foregroundColor(t.mutedColor)
+                                        Text("Connect GitHub to see your commits")
+                                            .font(.system(size: 11, design: .monospaced))
+                                            .foregroundColor(t.mutedColor)
+                                            .multilineTextAlignment(.center)
+                                    }
+                                    .padding(16)
+
+                                    Button {
+                                        showTokenEntry = true
+                                    } label: {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "key.fill")
+                                            Text("Sign in with Personal Access Token")
+                                        }
+                                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                        .foregroundColor(.white)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .background(
+                                            Capsule().fill(Color(red: 0.15, green: 0.15, blue: 0.15))
+                                        )
+                                        .overlay(Capsule().stroke(t.accent.opacity(0.3), lineWidth: 0.5))
+                                    }
+                                    .buttonStyle(.plain)
+
+                                    Text("Generate a token at github.com/settings/tokens\nwith 'repo' scope")
+                                        .font(.system(size: 9, design: .monospaced))
+                                        .foregroundColor(t.mutedColor.opacity(0.6))
+                                        .multilineTextAlignment(.center)
+                                }
+                                .padding(12)
+                                .liquidGlassCard(theme: t, cornerRadius: 14)
+                            }
+                        }
+                        .alert("GitHub Token", isPresented: $showTokenEntry) {
+                            TextField("ghp_xxxxxxxxxxxx", text: $tokenInput)
+                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.never)
+                            Button("Sign In") {
+                                let token = tokenInput.trimmingCharacters(in: .whitespacesAndNewlines)
+                                guard !token.isEmpty else { return }
+                                Task { await github.signInWithToken(token) }
+                                tokenInput = ""
+                            }
+                            Button("Cancel", role: .cancel) { tokenInput = "" }
+                        } message: {
+                            Text("Enter a GitHub Personal Access Token with 'repo' scope. Generate one at github.com/settings/tokens")
                         }
 
                         VStack(alignment: .leading, spacing: 8) {
@@ -387,5 +556,32 @@ fn main() {
                 }
             }
         }
+    }
+}
+
+// MARK: - Git Stat Badge
+
+struct GitStatBadge: View {
+    let value: String
+    let label: String
+    let icon: String
+    let color: Color
+    let theme: ParadiseTheme
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundColor(color)
+            Text(value)
+                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                .foregroundColor(theme.textColor)
+            Text(label)
+                .font(.system(size: 8, design: .monospaced))
+                .foregroundColor(theme.mutedColor)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .liquidGlassCard(theme: theme, cornerRadius: 10)
     }
 }

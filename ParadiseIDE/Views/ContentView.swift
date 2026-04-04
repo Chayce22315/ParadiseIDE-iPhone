@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var vm: EditorViewModel
     @EnvironmentObject var folderManager: FolderManager
+    @EnvironmentObject var github: GitHubService
     @State private var sidebarVisible = true
     @State private var terminalVisible = false
     @State private var terminalHeight: CGFloat = 320
@@ -79,7 +80,9 @@ struct ContentView: View {
             ExportView().environmentObject(vm)
         }
         .sheet(isPresented: $vm.showSettingsPanel) {
-            AppSettingsView().environmentObject(vm)
+            AppSettingsView()
+                .environmentObject(vm)
+                .environmentObject(github)
         }
         .sheet(isPresented: $vm.showSnippetsPanel) {
             SnippetsLibraryView().environmentObject(vm)

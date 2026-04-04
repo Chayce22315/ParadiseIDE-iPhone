@@ -66,6 +66,7 @@ final class DynamicIslandManager: ObservableObject {
 struct DynamicIslandBannerView: View {
     @EnvironmentObject var vm: EditorViewModel
     @EnvironmentObject var folderManager: FolderManager
+    @EnvironmentObject var github: GitHubService
     @ObservedObject var islandManager = DynamicIslandManager.shared
     @State private var expanded = false
     @State private var pulseAnimation = false
@@ -148,6 +149,12 @@ struct DynamicIslandBannerView: View {
                     .foregroundColor(.white.opacity(0.7))
             }
 
+            if github.isSignedIn, let user = github.user {
+                Text("@\(user.login)")
+                    .font(.system(size: 8, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.4))
+            }
+
             Text("\(vm.lineCount)L")
                 .font(.system(size: 9, weight: .medium, design: .monospaced))
                 .foregroundColor(t.accent.opacity(0.8))
@@ -198,6 +205,25 @@ struct DynamicIslandBannerView: View {
                 }
             }
 
+            // GitHub user row
+            if github.isSignedIn, let user = github.user {
+                HStack(spacing: 6) {
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 9))
+                        .foregroundColor(.white.opacity(0.5))
+                    Text("@\(user.login)")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.7))
+                    Spacer()
+                    if github.commitStats.todayCommits > 0 {
+                        Text("\(github.commitStats.todayCommits) today")
+                            .font(.system(size: 9, design: .monospaced))
+                            .foregroundColor(.green.opacity(0.8))
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+
             // Folder info row
             if folderManager.rootURL != nil {
                 HStack(spacing: 6) {
@@ -222,7 +248,11 @@ struct DynamicIslandBannerView: View {
                 IslandStatPill(icon: "character.cursor.ibeam", value: "\(vm.code.count)", label: "chars", color: t.accent2)
                 IslandStatPill(icon: "square.on.square", value: "\(vm.tabs.count)", label: "tabs", color: .green)
                 IslandStatPill(icon: "doc.on.doc", value: "\(folderManager.totalFileCount)", label: "files", color: .cyan)
-                IslandStatPill(icon: "arrow.triangle.branch", value: "\(folderManager.commitCount)", label: "saves", color: .orange)
+                if github.isSignedIn && github.commitStats.totalCommits > 0 {
+                    IslandStatPill(icon: "arrow.triangle.branch", value: "\(github.commitStats.totalCommits)", label: "commits", color: .orange)
+                } else {
+                    IslandStatPill(icon: "arrow.triangle.branch", value: "\(folderManager.commitCount)", label: "saves", color: .orange)
+                }
                 if vm.showAIPanel {
                     IslandStatPill(icon: "cpu", value: "ON", label: "AI", color: .purple)
                 }
