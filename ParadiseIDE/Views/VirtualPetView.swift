@@ -4,7 +4,6 @@ struct VirtualPetView: View {
     @EnvironmentObject var vm: EditorViewModel
     var t: ParadiseTheme { vm.theme }
 
-    // Drive animation from mood
     @State private var bounceOffset: CGFloat = 0
     @State private var rotation: Double = 0
     @State private var scale: CGFloat = 1.0
@@ -19,9 +18,22 @@ struct VirtualPetView: View {
                     .frame(width: 44, height: 44)
                     .background(
                         Circle()
-                            .fill(t.surface)
-                            .overlay(Circle().stroke(t.surfaceBorder, lineWidth: 1.5))
-                            .shadow(color: t.accent.opacity(0.25), radius: 10)
+                            .fill(.ultraThinMaterial)
+                            .overlay(
+                                Circle()
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [
+                                                t.accent.opacity(0.3),
+                                                t.accent.opacity(0.1)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1
+                                    )
+                            )
+                            .shadow(color: t.accent.opacity(0.2), radius: 8)
                     )
                     .offset(y: bounceOffset)
                     .rotationEffect(.degrees(rotation))

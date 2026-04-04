@@ -23,7 +23,6 @@ struct EditorView: View {
                 }
             }
 
-            // AI response panel
             if vm.showAIPanel && !vm.aiResponse.isEmpty {
                 AIResponsePanel()
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -31,14 +30,14 @@ struct EditorView: View {
 
             EditorToolbarView()
         }
-        .background(Color.black.opacity(0.12))
+        .background(Color.black.opacity(0.08))
         .animation(.spring(response: 0.3), value: vm.guideMode)
         .animation(.spring(response: 0.3), value: vm.showFindReplace)
         .animation(.spring(response: 0.3), value: vm.showAIPanel)
     }
 }
 
-// MARK: - Welcome screen (no tabs open)
+// MARK: - Welcome screen
 
 struct WelcomeView: View {
     @EnvironmentObject var vm: EditorViewModel
@@ -46,24 +45,27 @@ struct WelcomeView: View {
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 24) {
+            ParadiseAppIcon(size: 80)
+                .shadow(color: t.accent.opacity(0.3), radius: 20)
+
             Text("Paradise IDE")
                 .font(.system(size: 28, weight: .medium, design: .serif))
                 .italic()
                 .foregroundColor(t.accent)
 
-            Text("Open a folder to start coding")
+            Text("Open a folder or create a new file to start")
                 .font(.system(size: 13, design: .monospaced))
                 .foregroundColor(t.mutedColor)
 
-            HStack(spacing: 12) {
+            HStack(spacing: 14) {
                 Button("Open Folder") {
                     folderManager.showPicker = true
                 }
                 .font(.system(size: 12, design: .monospaced))
                 .foregroundColor(t.accent)
-                .padding(.horizontal, 16).padding(.vertical, 8)
-                .background(RoundedRectangle(cornerRadius: 8).stroke(t.accent, lineWidth: 1))
+                .padding(.horizontal, 18).padding(.vertical, 10)
+                .liquidGlass(cornerRadius: 10, tint: t.accent, intensity: 0.8)
                 .buttonStyle(.plain)
 
                 Button("New File") {
@@ -71,12 +73,42 @@ struct WelcomeView: View {
                 }
                 .font(.system(size: 12, design: .monospaced))
                 .foregroundColor(t.mutedColor)
-                .padding(.horizontal, 16).padding(.vertical, 8)
-                .background(RoundedRectangle(cornerRadius: 8).stroke(t.surfaceBorder, lineWidth: 1))
+                .padding(.horizontal, 18).padding(.vertical, 10)
+                .liquidGlass(cornerRadius: 10, tint: t.mutedColor, intensity: 0.4)
                 .buttonStyle(.plain)
             }
+
+            VStack(spacing: 8) {
+                Text("Quick Start")
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundColor(t.mutedColor.opacity(0.6))
+
+                HStack(spacing: 20) {
+                    quickAction(icon: "swift", label: "Swift") { vm.newUntitledTab(language: "swift") }
+                    quickAction(icon: "terminal.fill", label: "Python") { vm.newUntitledTab(language: "python") }
+                    quickAction(icon: "j.square", label: "JS") { vm.newUntitledTab(language: "javascript") }
+                    quickAction(icon: "globe", label: "HTML") { vm.newUntitledTab(language: "html") }
+                }
+            }
+            .padding(.top, 8)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func quickAction(icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 18))
+                    .foregroundColor(t.accent.opacity(0.6))
+                Text(label)
+                    .font(.system(size: 9, design: .monospaced))
+                    .foregroundColor(t.mutedColor)
+            }
+            .frame(width: 52, height: 52)
+            .liquidGlass(cornerRadius: 12, tint: t.accent, intensity: 0.3)
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -94,7 +126,6 @@ struct TabBarView: View {
                     TabButton(tab: tab, theme: t)
                 }
 
-                // New tab button
                 Button {
                     vm.newUntitledTab()
                 } label: {
@@ -107,12 +138,11 @@ struct TabBarView: View {
             }
         }
         .frame(height: 36)
-        .background(t.surface)
-        .overlay(Rectangle().frame(height: 1).foregroundColor(t.surfaceBorder), alignment: .bottom)
+        .background(.ultraThinMaterial.opacity(0.4))
+        .overlay(FrostedDivider(t.surfaceBorder), alignment: .bottom)
         .overlay(
             HStack {
                 Spacer()
-                // Guide + Pet
                 HStack(spacing: 8) {
                     Button { withAnimation { vm.guideMode.toggle() } } label: {
                         Text("Guide")
@@ -120,7 +150,6 @@ struct TabBarView: View {
                             .foregroundColor(vm.guideMode ? t.accent : t.mutedColor)
                     }.buttonStyle(.plain)
 
-                    // Save button
                     Button {
                         vm.saveActiveTab(using: folderManager)
                     } label: {
@@ -153,7 +182,7 @@ struct TabButton: View {
 
             if tab.isDirty {
                 Circle()
-                    .fill(theme.accent)
+                    .fill(Color.orange)
                     .frame(width: 5, height: 5)
             }
 
@@ -194,8 +223,8 @@ struct GuideBannerView: View {
             }.buttonStyle(.plain)
         }
         .padding(.horizontal, 12).padding(.vertical, 6)
-        .background(t.accent.opacity(0.08))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(t.surfaceBorder), alignment: .bottom)
+        .background(t.accent.opacity(0.06))
+        .overlay(FrostedDivider(t.surfaceBorder), alignment: .bottom)
     }
 }
 
@@ -238,8 +267,8 @@ struct FindReplaceBar: View {
             }.buttonStyle(.plain)
         }
         .padding(.horizontal, 12).padding(.vertical, 6)
-        .background(Color.black.opacity(0.2))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(t.surfaceBorder), alignment: .bottom)
+        .background(.ultraThinMaterial.opacity(0.3))
+        .overlay(FrostedDivider(t.surfaceBorder), alignment: .bottom)
     }
 }
 
@@ -261,8 +290,12 @@ struct LineGutter: View {
                 }
             }.padding(.top, 14)
         }
-        .background(Color.black.opacity(0.15))
-        .overlay(Rectangle().frame(width: 1).foregroundColor(t.surfaceBorder), alignment: .trailing)
+        .background(Color.black.opacity(0.1))
+        .overlay(
+            Rectangle().frame(width: 0.5)
+                .foregroundColor(t.surfaceBorder),
+            alignment: .trailing
+        )
         .disabled(true)
     }
 }
@@ -319,19 +352,19 @@ struct AISuggestionPanel: View {
                     Button("Apply Fix") { vm.applyFix() }
                         .font(.system(size: 11, design: .monospaced)).foregroundColor(t.accent)
                         .padding(.horizontal, 12).padding(.vertical, 6)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(t.accent.opacity(0.15)).overlay(RoundedRectangle(cornerRadius: 8).stroke(t.accent, lineWidth: 1)))
+                        .liquidGlass(cornerRadius: 8, tint: t.accent, intensity: 0.8)
                         .buttonStyle(.plain)
                 }
                 Button("Dismiss") { vm.dismissSuggestion() }
                     .font(.system(size: 11, design: .monospaced)).foregroundColor(t.mutedColor)
                     .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(RoundedRectangle(cornerRadius: 8).stroke(t.surfaceBorder, lineWidth: 1))
+                    .liquidGlass(cornerRadius: 8, tint: t.mutedColor, intensity: 0.4)
                     .buttonStyle(.plain)
             }
         }
         .padding(14)
-        .background(RoundedRectangle(cornerRadius: 14).fill(t.surface).background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14)).shadow(color: t.accent.opacity(0.2), radius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(t.accent.opacity(0.4), lineWidth: 1))
+        .liquidGlass(cornerRadius: 14, tint: t.accent, intensity: 0.9)
+        .shadow(color: t.accent.opacity(0.2), radius: 16)
         .frame(maxWidth: 280)
     }
 }
@@ -364,8 +397,8 @@ struct AIResponsePanel: View {
             .frame(maxHeight: 140)
         }
         .padding(12)
-        .background(t.surface)
-        .overlay(Rectangle().frame(height: 1).foregroundColor(t.surfaceBorder), alignment: .top)
+        .background(.ultraThinMaterial.opacity(0.4))
+        .overlay(FrostedDivider(t.surfaceBorder), alignment: .top)
     }
 }
 
@@ -379,7 +412,6 @@ struct EditorToolbarView: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            // AI Tools
             Button {
                 Task {
                     let response = await aiService.complete(
@@ -394,12 +426,11 @@ struct EditorToolbarView: View {
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(t.accent)
                     .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(t.accent.opacity(0.15)).overlay(RoundedRectangle(cornerRadius: 8).stroke(t.accent, lineWidth: 1)))
+                    .liquidGlass(cornerRadius: 8, tint: t.accent, intensity: 0.6)
             }
             .buttonStyle(.plain)
             .shadow(color: vm.aiPulsing ? t.accent.opacity(0.7) : .clear, radius: vm.aiPulsing ? 12 : 0)
 
-            // Find/Replace
             Button {
                 withAnimation { vm.showFindReplace.toggle() }
             } label: {
@@ -408,7 +439,6 @@ struct EditorToolbarView: View {
                     .foregroundColor(vm.showFindReplace ? t.accent : t.mutedColor)
             }.buttonStyle(.plain)
 
-            // Save
             Button {
                 vm.saveActiveTab(using: folderManager)
             } label: {
@@ -419,28 +449,23 @@ struct EditorToolbarView: View {
                 .font(.system(size: 11, design: .monospaced))
                 .foregroundColor(vm.activeTab?.isDirty == true ? t.accent : t.mutedColor)
                 .padding(.horizontal, 10).padding(.vertical, 6)
-                .background(RoundedRectangle(cornerRadius: 8).stroke(t.surfaceBorder, lineWidth: 1))
+                .liquidGlass(cornerRadius: 8, tint: t.mutedColor, intensity: 0.3)
             }.buttonStyle(.plain)
 
-            // Export
             Button { vm.showExportPanel = true } label: {
                 Label("Export", systemImage: "square.and.arrow.up")
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(t.mutedColor)
                     .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(RoundedRectangle(cornerRadius: 8).stroke(t.surfaceBorder, lineWidth: 1))
+                    .liquidGlass(cornerRadius: 8, tint: t.mutedColor, intensity: 0.3)
             }.buttonStyle(.plain)
 
             Spacer()
 
-            // Language indicator
             if let tab = vm.activeTab {
-                Text(tab.language.uppercased())
-                    .font(.system(size: 9, design: .monospaced))
-                    .foregroundColor(t.mutedColor)
+                MiniTag(text: tab.language.uppercased(), color: t.accent)
             }
 
-            // Flow state dot
             HStack(spacing: 5) {
                 Circle().fill(t.accent).frame(width: 6, height: 6)
                     .shadow(color: t.accent.opacity(0.8), radius: vm.performanceMode ? 0 : 5)
@@ -451,7 +476,7 @@ struct EditorToolbarView: View {
         }
         .padding(.horizontal, 12)
         .frame(height: 42)
-        .background(t.surface)
-        .overlay(Rectangle().frame(height: 1).foregroundColor(t.surfaceBorder), alignment: .top)
+        .background(.ultraThinMaterial.opacity(0.4))
+        .overlay(FrostedDivider(t.surfaceBorder), alignment: .top)
     }
 }

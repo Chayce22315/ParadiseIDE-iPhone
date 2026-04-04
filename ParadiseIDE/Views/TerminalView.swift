@@ -52,10 +52,10 @@ struct TerminalView: View {
                     bridge.send(command: "cat \(file.path)")
                     Task { await loadFileIntoEditor(file: file) }
                 }
-                .frame(width: 180)
+                .frame(width: 170)
             }
         }
-        .background(Color.black.opacity(0.45))
+        .background(Color.black.opacity(0.35))
         .onAppear {
             bridge.host = "localhost"
             bridge.port = "8765"
@@ -159,8 +159,8 @@ struct TerminalTopBar: View {
         }
         .padding(.horizontal, 12)
         .frame(height: 36)
-        .background(Color.black.opacity(0.5))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(theme.surfaceBorder), alignment: .bottom)
+        .background(.ultraThinMaterial.opacity(0.4))
+        .overlay(FrostedDivider(theme.surfaceBorder), alignment: .bottom)
     }
 }
 
@@ -198,7 +198,7 @@ struct OutputScrollView: View {
                 }
             }
         }
-        .background(Color.black.opacity(0.3))
+        .background(Color.black.opacity(0.25))
     }
 }
 
@@ -222,15 +222,11 @@ struct AutocompleteDropdown: View {
                 .buttonStyle(.plain)
                 .background(Color.white.opacity(0.03))
                 if suggestion != engine.suggestions.last {
-                    Divider().background(theme.surfaceBorder.opacity(0.3))
+                    FrostedDivider(theme.surfaceBorder)
                 }
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.black.opacity(0.8))
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(theme.surfaceBorder, lineWidth: 1))
-        )
+        .liquidGlass(cornerRadius: 8, tint: theme.accent, intensity: 0.5)
         .padding(.horizontal, 12).padding(.bottom, 2)
         .transition(.opacity.combined(with: .move(edge: .bottom)))
         .animation(.easeOut(duration: 0.15), value: engine.suggestions)
@@ -291,8 +287,8 @@ struct InputBar: View {
             .disabled(input.isEmpty || !bridge.state.isConnected)
         }
         .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(Color.black.opacity(0.55))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(theme.surfaceBorder), alignment: .top)
+        .background(.ultraThinMaterial.opacity(0.4))
+        .overlay(FrostedDivider(theme.surfaceBorder), alignment: .top)
         .onTapGesture { isFocused.wrappedValue = true }
     }
 }
@@ -319,7 +315,7 @@ struct WorkspacePanel: View {
             }
             .padding(.horizontal, 10).padding(.vertical, 8)
 
-            Divider().background(theme.surfaceBorder)
+            FrostedDivider(theme.surfaceBorder)
 
             if bridge.workspaceFiles.isEmpty {
                 VStack(spacing: 8) {
@@ -341,14 +337,18 @@ struct WorkspacePanel: View {
                 }
             }
 
-            Divider().background(theme.surfaceBorder)
+            FrostedDivider(theme.surfaceBorder)
             Text("ID: \(String(bridge.sessionID.prefix(8)))...")
                 .font(.system(size: 8, design: .monospaced))
                 .foregroundColor(theme.mutedColor.opacity(0.4))
                 .padding(8)
         }
-        .background(Color.black.opacity(0.3))
-        .overlay(Rectangle().frame(width: 1).foregroundColor(theme.surfaceBorder), alignment: .leading)
+        .background(.ultraThinMaterial.opacity(0.2))
+        .overlay(
+            Rectangle().frame(width: 0.5)
+                .foregroundColor(theme.surfaceBorder),
+            alignment: .leading
+        )
     }
 }
 
@@ -457,9 +457,16 @@ extension View {
             .foregroundColor(color)
             .padding(.horizontal, 10).padding(.vertical, 4)
             .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(color.opacity(0.15))
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(color.opacity(0.5), lineWidth: 1))
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(color.opacity(0.12))
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(color.opacity(0.35), lineWidth: 0.5)
             )
             .buttonStyle(.plain)
     }

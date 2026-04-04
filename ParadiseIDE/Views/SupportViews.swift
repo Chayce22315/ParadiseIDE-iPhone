@@ -4,23 +4,65 @@ import SwiftUI
 
 struct StatusBarView: View {
     @EnvironmentObject var vm: EditorViewModel
+    @ObservedObject var liveActivity = LiveActivityManager.shared
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             if let tab = vm.activeTab {
-                Text(tab.name).font(.system(size: 10, design: .monospaced)).foregroundColor(t.mutedColor)
-                Text(tab.language.uppercased()).font(.system(size: 10, design: .monospaced)).foregroundColor(t.mutedColor)
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(tab.isDirty ? Color.orange : t.accent)
+                        .frame(width: 5, height: 5)
+                    Text(tab.name)
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(t.mutedColor)
+                        .lineLimit(1)
+                }
+
+                Text(tab.language.uppercased())
+                    .font(.system(size: 9, design: .monospaced))
+                    .foregroundColor(t.mutedColor.opacity(0.7))
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1)
+                    .background(RoundedRectangle(cornerRadius: 3).fill(t.mutedColor.opacity(0.1)))
             }
-            Text("Ln \(vm.lineCount)").font(.system(size: 10, design: .monospaced)).foregroundColor(t.mutedColor)
+
+            Text("Ln \(vm.lineCount)")
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(t.mutedColor)
+
             Text(t.petEmoji)
+
             Spacer()
-            Text("Paradise IDE").font(.system(size: 10, design: .monospaced)).foregroundColor(t.mutedColor)
+
+            if liveActivity.isActivityActive {
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(t.accent)
+                        .frame(width: 4, height: 4)
+                        .shadow(color: t.accent, radius: 3)
+                    Text(sessionTimer)
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundColor(t.accent)
+                }
+            }
+
+            Text("Paradise IDE")
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(t.mutedColor)
         }
-        .padding(.horizontal, 12)
-        .frame(height: 24)
-        .background(t.accent.opacity(0.10))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(t.surfaceBorder), alignment: .top)
+        .padding(.horizontal, 14)
+        .frame(height: 26)
+        .background(.ultraThinMaterial.opacity(0.5))
+        .overlay(FrostedDivider(t.surfaceBorder), alignment: .top)
+    }
+
+    private var sessionTimer: String {
+        let s = liveActivity.codingSeconds
+        let m = s / 60
+        let sec = s % 60
+        return String(format: "%d:%02d", m, sec)
     }
 }
 
@@ -34,23 +76,32 @@ struct ErrorToastView: View {
         VStack {
             Spacer()
             HStack(spacing: 12) {
-                Image(systemName: "envelope").font(.system(size: 18)).foregroundColor(t.accent)
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(t.accent)
+
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("PARADISE TOOLS").font(.system(size: 9, design: .monospaced)).foregroundColor(t.mutedColor)
-                    Text("No stress! Looks like a small issue. The AI can help fix it.").font(.system(size: 12, design: .monospaced)).foregroundColor(t.textColor)
+                    Text("PARADISE TOOLS")
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .foregroundColor(t.mutedColor)
+                    Text("No stress! Looks like a small issue. The AI can help fix it.")
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundColor(t.textColor)
                 }
                 Spacer()
                 Button {
                     vm.showErrorToast = false
                     vm.petMood = .idle
                 } label: {
-                    Image(systemName: "xmark").foregroundColor(t.mutedColor).font(.system(size: 12))
+                    Image(systemName: "xmark")
+                        .foregroundColor(t.mutedColor)
+                        .font(.system(size: 12))
                 }.buttonStyle(.plain)
             }
-            .padding(14)
-            .background(RoundedRectangle(cornerRadius: 14).fill(t.surface).background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14)).shadow(color: t.accent.opacity(0.25), radius: 20))
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(t.accent.opacity(0.3), lineWidth: 1))
-            .padding(.horizontal, 16).padding(.bottom, 32)
+            .padding(16)
+            .liquidGlass(cornerRadius: 18, tint: t.accent, intensity: 0.9)
+            .shadow(color: t.accent.opacity(0.25), radius: 20)
+            .padding(.horizontal, 16).padding(.bottom, 36)
         }
     }
 }

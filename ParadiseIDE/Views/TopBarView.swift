@@ -5,17 +5,19 @@ struct TopBarView: View {
     @EnvironmentObject var folderManager: FolderManager
     @Binding var sidebarVisible: Bool
     @Binding var terminalVisible: Bool
+    @Binding var showCommandPalette: Bool
+    @Binding var showDynamicIsland: Bool
     @State private var showingPicker = false
+    @State private var showIconPreview = false
 
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
         HStack(spacing: 10) {
-
             Button { withAnimation { sidebarVisible.toggle() } } label: {
                 Image(systemName: "sidebar.left")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(t.mutedColor)
+                    .foregroundColor(sidebarVisible ? t.accent : t.mutedColor)
             }.buttonStyle(.plain)
 
             Text("Paradise IDE")
@@ -31,11 +33,10 @@ struct TopBarView: View {
                 }
                 .foregroundColor(folderManager.rootURL != nil ? t.accent : t.mutedColor)
                 .padding(.horizontal, 8).padding(.vertical, 4)
-                .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(folderManager.rootURL != nil ? t.accent.opacity(0.12) : Color.clear)
-                        .overlay(RoundedRectangle(cornerRadius: 20)
-                            .stroke(folderManager.rootURL != nil ? t.accent : t.surfaceBorder, lineWidth: 1))
+                .liquidGlass(
+                    cornerRadius: 20,
+                    tint: folderManager.rootURL != nil ? t.accent : t.mutedColor,
+                    intensity: folderManager.rootURL != nil ? 0.8 : 0.3
                 )
             }
             .buttonStyle(.plain)
@@ -54,6 +55,29 @@ struct TopBarView: View {
 
             Spacer()
 
+            // Command palette button
+            Button { withAnimation { showCommandPalette.toggle() } } label: {
+                Image(systemName: "command")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(t.mutedColor)
+                    .padding(6)
+                    .liquidGlass(cornerRadius: 8, tint: t.accent, intensity: 0.3)
+            }.buttonStyle(.plain)
+
+            // App icon preview
+            Button { showIconPreview = true } label: {
+                ParadiseAppIcon(size: 24)
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            }.buttonStyle(.plain)
+
+            // Dynamic Island toggle
+            Button { withAnimation { showDynamicIsland.toggle() } } label: {
+                Image(systemName: showDynamicIsland ? "capsule.portrait.fill" : "capsule.portrait")
+                    .font(.system(size: 12))
+                    .foregroundColor(showDynamicIsland ? t.accent : t.mutedColor)
+            }.buttonStyle(.plain)
+
+            // Theme switcher
             HStack(spacing: 6) {
                 ForEach(ParadiseTheme.all) { theme in
                     Button {
@@ -73,10 +97,11 @@ struct TopBarView: View {
                     .font(.system(size: 9, design: .monospaced))
                     .foregroundColor(vm.performanceMode ? t.accent : t.mutedColor)
                     .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 20)
-                        .fill(vm.performanceMode ? t.accent.opacity(0.15) : Color.clear)
-                        .overlay(RoundedRectangle(cornerRadius: 20)
-                            .stroke(vm.performanceMode ? t.accent : t.surfaceBorder, lineWidth: 1)))
+                    .liquidGlass(
+                        cornerRadius: 20,
+                        tint: vm.performanceMode ? t.accent : t.mutedColor,
+                        intensity: vm.performanceMode ? 0.8 : 0.3
+                    )
             }.buttonStyle(.plain)
 
             Button { withAnimation { terminalVisible.toggle() } } label: {
@@ -84,15 +109,19 @@ struct TopBarView: View {
                     .font(.system(size: 13))
                     .foregroundColor(terminalVisible ? t.accent : t.mutedColor)
                     .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 20)
-                        .fill(terminalVisible ? t.accent.opacity(0.15) : Color.clear)
-                        .overlay(RoundedRectangle(cornerRadius: 20)
-                            .stroke(terminalVisible ? t.accent : t.surfaceBorder, lineWidth: 1)))
+                    .liquidGlass(
+                        cornerRadius: 20,
+                        tint: terminalVisible ? t.accent : t.mutedColor,
+                        intensity: terminalVisible ? 0.8 : 0.3
+                    )
             }.buttonStyle(.plain)
         }
-        .padding(.horizontal, 12)
-        .frame(height: 46)
-        .background(t.surface.background(.ultraThinMaterial).ignoresSafeArea(edges: .top))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(t.surfaceBorder), alignment: .bottom)
+        .padding(.horizontal, 14)
+        .frame(height: 48)
+        .background(.ultraThinMaterial.opacity(0.8))
+        .overlay(FrostedDivider(t.surfaceBorder), alignment: .bottom)
+        .sheet(isPresented: $showIconPreview) {
+            AppIconPreviewSheet().environmentObject(vm)
+        }
     }
 }

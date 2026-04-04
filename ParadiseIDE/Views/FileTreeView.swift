@@ -14,68 +14,87 @@ struct FileTreeView: View {
     @State private var showRenameSheet = false
     @State private var renameTarget: FileNode? = nil
     @State private var renameTo = ""
+    @State private var searchQuery = ""
 
     var body: some View {
         VStack(spacing: 0) {
             // Header
             HStack {
                 Text(folderManager.rootName.uppercased())
-                    .font(.system(size: 9, design: .monospaced))
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
                     .foregroundColor(t.mutedColor)
-                    .tracking(1.5)
+                    .tracking(1.2)
                     .lineLimit(1)
 
                 Spacer()
 
-                // New file
-                Button {
-                    newItemParent = folderManager.rootURL
-                    showNewFile = true
-                } label: {
-                    Image(systemName: "doc.badge.plus")
-                        .font(.system(size: 12))
-                        .foregroundColor(t.mutedColor)
-                }.buttonStyle(.plain)
+                HStack(spacing: 6) {
+                    Button {
+                        newItemParent = folderManager.rootURL
+                        showNewFile = true
+                    } label: {
+                        Image(systemName: "doc.badge.plus")
+                            .font(.system(size: 11))
+                            .foregroundColor(t.mutedColor)
+                    }.buttonStyle(.plain)
 
-                // New folder
-                Button {
-                    newItemParent = folderManager.rootURL
-                    showNewFolder = true
-                } label: {
-                    Image(systemName: "folder.badge.plus")
-                        .font(.system(size: 12))
-                        .foregroundColor(t.mutedColor)
-                }.buttonStyle(.plain)
+                    Button {
+                        newItemParent = folderManager.rootURL
+                        showNewFolder = true
+                    } label: {
+                        Image(systemName: "folder.badge.plus")
+                            .font(.system(size: 11))
+                            .foregroundColor(t.mutedColor)
+                    }.buttonStyle(.plain)
 
-                // Refresh
-                Button {
-                    folderManager.refresh()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 11))
-                        .foregroundColor(t.mutedColor)
-                }.buttonStyle(.plain)
+                    Button {
+                        folderManager.refresh()
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 10))
+                            .foregroundColor(t.mutedColor)
+                    }.buttonStyle(.plain)
 
-                // Open folder
-                Button {
-                    folderManager.showPicker = true
-                } label: {
-                    Image(systemName: "folder")
-                        .font(.system(size: 12))
-                        .foregroundColor(t.accent)
-                }.buttonStyle(.plain)
+                    Button {
+                        folderManager.showPicker = true
+                    } label: {
+                        Image(systemName: "folder")
+                            .font(.system(size: 11))
+                            .foregroundColor(t.accent)
+                    }.buttonStyle(.plain)
+                }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
 
-            Divider().background(t.surfaceBorder)
+            FrostedDivider(t.surfaceBorder)
+
+            // Search
+            if folderManager.rootNode != nil {
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 10))
+                        .foregroundColor(t.mutedColor.opacity(0.6))
+
+                    TextField("Search files...", text: $searchQuery)
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundColor(t.textColor)
+                        .tint(t.accent)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Color.black.opacity(0.1))
+
+                FrostedDivider(t.surfaceBorder)
+            }
 
             if folderManager.rootNode == nil {
-                // No folder open
-                VStack(spacing: 10) {
+                VStack(spacing: 12) {
                     Image(systemName: "folder.badge.questionmark")
-                        .font(.system(size: 32))
-                        .foregroundColor(t.mutedColor.opacity(0.5))
+                        .font(.system(size: 30))
+                        .foregroundColor(t.mutedColor.opacity(0.4))
                     Text("No folder open")
                         .font(.system(size: 11, design: .monospaced))
                         .foregroundColor(t.mutedColor)
@@ -84,16 +103,16 @@ struct FileTreeView: View {
                     }
                     .font(.system(size: 10, design: .monospaced))
                     .foregroundColor(t.accent)
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(RoundedRectangle(cornerRadius: 8).stroke(t.accent, lineWidth: 1))
+                    .padding(.horizontal, 14).padding(.vertical, 8)
+                    .liquidGlass(cornerRadius: 8, tint: t.accent, intensity: 0.7)
                     .buttonStyle(.plain)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let root = folderManager.rootNode {
-                ScrollView {
+                ScrollView(showsIndicators: false) {
                     LazyVStack(alignment: .leading, spacing: 0) {
                         if let children = root.children {
-                            ForEach(children) { node in
+                            ForEach(filteredChildren(children)) { node in
                                 FileNodeRow(
                                     node: node,
                                     depth: 0,
@@ -122,8 +141,12 @@ struct FileTreeView: View {
                 }
             }
         }
-        .background(t.surface)
-        .overlay(Rectangle().frame(width: 1).foregroundColor(t.surfaceBorder), alignment: .trailing)
+        .background(.ultraThinMaterial.opacity(0.3))
+        .overlay(
+            Rectangle().frame(width: 0.5)
+                .foregroundColor(t.surfaceBorder),
+            alignment: .trailing
+        )
         .fullScreenCover(isPresented: $folderManager.showPicker) {
             FolderPicker(
                 onPick: { url in
@@ -175,6 +198,14 @@ struct FileTreeView: View {
         }
     }
 
+    private func filteredChildren(_ children: [FileNode]) -> [FileNode] {
+        guard !searchQuery.isEmpty else { return children }
+        return children.filter { node in
+            node.name.localizedCaseInsensitiveContains(searchQuery) ||
+            (node.isDirectory && node.children?.contains(where: { $0.name.localizedCaseInsensitiveContains(searchQuery) }) == true)
+        }
+    }
+
     private func openFile(url: URL, language: String) {
         if let content = folderManager.readFile(url) {
             vm.openFile(url: url, content: content, language: language)
@@ -202,12 +233,10 @@ struct FileNodeRow: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 4) {
-                // Indent
                 Rectangle()
                     .fill(Color.clear)
                     .frame(width: CGFloat(depth * 14))
 
-                // Expand arrow for dirs
                 if node.isDirectory {
                     Image(systemName: node.isExpanded ? "chevron.down" : "chevron.right")
                         .font(.system(size: 9, weight: .medium))
@@ -217,13 +246,11 @@ struct FileNodeRow: View {
                     Rectangle().fill(Color.clear).frame(width: 12)
                 }
 
-                // Icon
                 Image(systemName: node.icon)
                     .font(.system(size: 11))
                     .foregroundColor(node.isDirectory ? theme.accent.opacity(0.8) : theme.mutedColor)
                     .frame(width: 16)
 
-                // Name
                 Text(node.name)
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(isActive ? theme.accent : theme.textColor)
@@ -269,7 +296,6 @@ struct FileNodeRow: View {
                 } label: { Label("Delete", systemImage: "trash") }
             }
 
-            // Children
             if node.isDirectory && node.isExpanded, let children = node.children {
                 ForEach(children) { child in
                     FileNodeRow(

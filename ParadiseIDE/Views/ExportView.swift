@@ -44,11 +44,10 @@ post-build:
                     .ignoresSafeArea()
 
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 22) {
 
-                        // Header
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("⚙️ Paradise Export")
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Paradise Export")
                                 .font(.system(size: 22, weight: .medium, design: .serif))
                                 .italic()
                                 .foregroundColor(t.accent)
@@ -57,14 +56,14 @@ post-build:
                                 .foregroundColor(t.mutedColor)
                         }
 
-                        // Config fields
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 14) {
                             ExportField(label: "App Name", value: $appName, theme: t)
                             ExportField(label: "Version",  value: $appVersion, theme: t)
                         }
+                        .padding(14)
+                        .liquidGlass(cornerRadius: 14, tint: t.accent, intensity: 0.4)
 
-                        // Platform selector
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 10) {
                             Text("PLATFORMS")
                                 .font(.system(size: 10, design: .monospaced))
                                 .foregroundColor(t.mutedColor)
@@ -83,14 +82,11 @@ post-build:
                                             .font(.system(size: 12, design: .monospaced))
                                             .foregroundColor(selected ? t.accent : t.mutedColor)
                                             .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 10)
-                                            .background(
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .fill(selected ? t.accent.opacity(0.15) : Color.black.opacity(0.2))
-                                                    .overlay(
-                                                        RoundedRectangle(cornerRadius: 8)
-                                                            .stroke(selected ? t.accent : t.surfaceBorder, lineWidth: 1)
-                                                    )
+                                            .padding(.vertical, 12)
+                                            .liquidGlass(
+                                                cornerRadius: 10,
+                                                tint: selected ? t.accent : t.mutedColor,
+                                                intensity: selected ? 0.8 : 0.3
                                             )
                                     }
                                     .buttonStyle(.plain)
@@ -98,8 +94,7 @@ post-build:
                             }
                         }
 
-                        // iOS options
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 10) {
                             Text("iOS OPTIONS")
                                 .font(.system(size: 10, design: .monospaced))
                                 .foregroundColor(t.mutedColor)
@@ -117,8 +112,9 @@ post-build:
                             }
                             .tint(t.accent)
                         }
+                        .padding(14)
+                        .liquidGlass(cornerRadius: 14, tint: t.accent, intensity: 0.4)
 
-                        // YAML preview
                         VStack(alignment: .leading, spacing: 8) {
                             Text("GENERATED YAML")
                                 .font(.system(size: 10, design: .monospaced))
@@ -133,12 +129,9 @@ post-build:
                                     .padding(14)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.black.opacity(0.35))
-                            .cornerRadius(10)
-                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(t.surfaceBorder, lineWidth: 1))
+                            .liquidGlass(cornerRadius: 12, tint: t.accent, intensity: 0.4)
                         }
 
-                        // Execute button
                         Button {
                             withAnimation(.spring(response: 0.3)) { buildPressed = true }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
@@ -147,21 +140,14 @@ post-build:
                             }
                         } label: {
                             HStack {
-                                Text(buildPressed ? "🚀 Building..." : "🚀 EXECUTE PARADISE BUILD")
-                                    .font(.system(size: 13, design: .monospaced))
+                                Text(buildPressed ? "Building..." : "EXECUTE PARADISE BUILD")
+                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
                                     .tracking(0.5)
                             }
                             .foregroundColor(t.accent)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(t.accent.opacity(0.18))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(t.accent, lineWidth: 1.5)
-                                    )
-                            )
+                            .liquidGlass(cornerRadius: 14, tint: t.accent, intensity: 0.9)
                         }
                         .buttonStyle(.plain)
                         .scaleEffect(buildPressed ? 0.97 : 1.0)
@@ -200,9 +186,12 @@ struct ExportField: View {
                 .font(.system(size: 12, design: .monospaced))
                 .foregroundColor(theme.textColor)
                 .padding(10)
-                .background(Color.black.opacity(0.25))
+                .background(Color.black.opacity(0.2))
                 .cornerRadius(8)
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(theme.surfaceBorder, lineWidth: 1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(theme.surfaceBorder, lineWidth: 0.5)
+                )
                 .tint(theme.accent)
         }
     }
