@@ -36,51 +36,117 @@ struct ParadiseIDELiveActivity: Widget {
 
         } dynamicIsland: { context in
             DynamicIsland {
-                // Expanded view
+                // ======== EXPANDED VIEW ========
+
                 DynamicIslandExpandedRegion(.leading) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(context.state.fileName)
-                            .font(.system(size: 13, weight: .bold, design: .monospaced))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                        Text(context.state.status)
-                            .font(.system(size: 11, design: .monospaced))
-                            .foregroundColor(.cyan)
+                    VStack(alignment: .leading, spacing: 6) {
+                        // App branding
+                        HStack(spacing: 5) {
+                            Image(systemName: "chevron.left.forwardslash.chevron.right")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.cyan)
+                            Text("PARADISE")
+                                .font(.system(size: 8, weight: .black, design: .monospaced))
+                                .foregroundColor(.cyan.opacity(0.7))
+                                .tracking(1.5)
+                        }
+
+                        // Current file
+                        HStack(spacing: 5) {
+                            Image(systemName: "doc.fill")
+                                .font(.system(size: 11))
+                                .foregroundColor(.cyan)
+                            Text(context.state.fileName)
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                        }
                     }
                     .padding(.leading, 4)
                 }
 
                 DynamicIslandExpandedRegion(.trailing) {
-                    VStack(alignment: .trailing, spacing: 4) {
+                    VStack(alignment: .trailing, spacing: 6) {
+                        // Language badge
                         Text(context.state.language.uppercased())
-                            .font(.system(size: 10, weight: .black, design: .monospaced))
+                            .font(.system(size: 9, weight: .black, design: .monospaced))
                             .foregroundColor(.black)
-                            .padding(.horizontal, 6)
+                            .padding(.horizontal, 8)
                             .padding(.vertical, 3)
                             .background(Capsule().fill(.cyan))
-                        Text("\(context.state.lineCount)L")
-                            .font(.system(size: 12, weight: .bold, design: .monospaced))
-                            .foregroundColor(.white)
+
+                        // Status indicator
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(statusColor(for: context.state.status))
+                                .frame(width: 6, height: 6)
+                            Text(context.state.status)
+                                .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                                .foregroundColor(statusColor(for: context.state.status))
+                        }
                     }
                     .padding(.trailing, 4)
                 }
 
-                DynamicIslandExpandedRegion(.bottom) {
-                    HStack(spacing: 0) {
-                        makeStatBox(icon: "doc.text.fill", value: "\(context.state.lineCount)", label: "LINES")
-                        makeStatBox(icon: "square.on.square.fill", value: "\(context.state.tabCount)", label: "TABS")
-                        if context.state.aiActive {
-                            makeStatBox(icon: "cpu.fill", value: "ON", label: "AI")
-                        }
-                        makeStatBox(icon: "circle.fill", value: context.state.status, label: "STATUS")
-                    }
-                    .padding(.top, 6)
-                }
-
                 DynamicIslandExpandedRegion(.center) {}
 
+                DynamicIslandExpandedRegion(.bottom) {
+                    VStack(spacing: 8) {
+                        // Stats row
+                        HStack(spacing: 0) {
+                            makeStatBox(
+                                icon: "text.line.last.and.arrowtriangle.forward",
+                                value: "\(context.state.lineCount)",
+                                label: "LINES",
+                                color: .cyan
+                            )
+                            makeDivider()
+                            makeStatBox(
+                                icon: "square.on.square",
+                                value: "\(context.state.tabCount)",
+                                label: "TABS",
+                                color: .green
+                            )
+                            makeDivider()
+                            makeStatBox(
+                                icon: "cpu",
+                                value: context.state.aiActive ? "ON" : "OFF",
+                                label: "AI",
+                                color: context.state.aiActive ? .purple : .gray
+                            )
+                            makeDivider()
+                            makeStatBox(
+                                icon: statusIcon(for: context.state.status),
+                                value: String(context.state.status.prefix(5)),
+                                label: "MODE",
+                                color: statusColor(for: context.state.status)
+                            )
+                        }
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(.white.opacity(0.06))
+                        )
+
+                        // Last action text
+                        if !context.state.lastAction.isEmpty {
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(.cyan.opacity(0.5))
+                                    .frame(width: 4, height: 4)
+                                Text(context.state.lastAction)
+                                    .font(.system(size: 9, design: .monospaced))
+                                    .foregroundColor(.white.opacity(0.4))
+                                    .lineLimit(1)
+                            }
+                        }
+                    }
+                    .padding(.top, 4)
+                }
+
             } compactLeading: {
-                // Compact left side
+                // ======== COMPACT LEFT ========
                 HStack(spacing: 4) {
                     Image(systemName: "chevron.left.forwardslash.chevron.right")
                         .font(.system(size: 10, weight: .bold))
@@ -92,13 +158,13 @@ struct ParadiseIDELiveActivity: Widget {
                 }
 
             } compactTrailing: {
-                // Compact right side
+                // ======== COMPACT RIGHT ========
                 Text("\(context.state.lineCount)L")
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
                     .foregroundColor(.cyan)
 
             } minimal: {
-                // Minimal (when another app also has a Live Activity)
+                // ======== MINIMAL ========
                 Image(systemName: "chevron.left.forwardslash.chevron.right")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.cyan)
@@ -106,19 +172,47 @@ struct ParadiseIDELiveActivity: Widget {
         }
     }
 
-    func makeStatBox(icon: String, value: String, label: String) -> some View {
-        VStack(spacing: 2) {
+    // MARK: - Helpers
+
+    func makeDivider() -> some View {
+        Rectangle()
+            .fill(.white.opacity(0.1))
+            .frame(width: 0.5, height: 28)
+    }
+
+    func makeStatBox(icon: String, value: String, label: String, color: Color) -> some View {
+        VStack(spacing: 3) {
             Image(systemName: icon)
                 .font(.system(size: 10))
-                .foregroundColor(.cyan)
+                .foregroundColor(color)
             Text(value)
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
                 .foregroundColor(.white)
                 .lineLimit(1)
+                .minimumScaleFactor(0.7)
             Text(label)
                 .font(.system(size: 7, weight: .bold, design: .monospaced))
-                .foregroundColor(.white.opacity(0.5))
+                .foregroundColor(.white.opacity(0.35))
+                .tracking(0.5)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    func statusIcon(for status: String) -> String {
+        switch status.lowercased() {
+        case "coding":     return "keyboard.fill"
+        case "background": return "moon.fill"
+        case "paused":     return "pause.circle.fill"
+        default:           return "circle.fill"
+        }
+    }
+
+    func statusColor(for status: String) -> Color {
+        switch status.lowercased() {
+        case "coding":     return .cyan
+        case "background": return .orange
+        case "paused":     return .yellow
+        default:           return .gray
+        }
     }
 }
