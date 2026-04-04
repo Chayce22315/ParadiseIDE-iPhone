@@ -454,7 +454,10 @@ struct AIResponsePanel: View {
 struct EditorToolbarView: View {
     @EnvironmentObject var vm: EditorViewModel
     @EnvironmentObject var folderManager: FolderManager
+    @EnvironmentObject var github: GitHubService
     @StateObject private var aiService = AIService()
+    @State private var showCommitAlert = false
+    @State private var commitMessage = ""
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
@@ -513,6 +516,20 @@ struct EditorToolbarView: View {
                     .foregroundColor(t.mutedColor)
             }.buttonStyle(.plain)
 
+            if github.isSignedIn && vm.activeTab != nil {
+                Button { showCommitAlert = true } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.up.circle.fill")
+                        Text("Push")
+                    }
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundColor(.green)
+                    .padding(.horizontal, 10).padding(.vertical, 7)
+                    .glassPill(color: .green, isActive: true)
+                }
+                .buttonStyle(.plain)
+            }
+
             Spacer()
 
             if let tab = vm.activeTab {
@@ -535,5 +552,31 @@ struct EditorToolbarView: View {
         .frame(height: 46)
         .liquidGlassToolbar(theme: t)
         .overlay(Rectangle().frame(height: 0.5).foregroundColor(t.surfaceBorder), alignment: .top)
+        .alert("Commit & Push", isPresented: $showCommitAlert) {
+            TextField("Commit message", text: $commitMessage)
+            Button("Push") {
+                let msg = commitMessage.isEmpty ? "Update \(vm.activeTab?.name ?? "file")" : commitMessage
+                if let tab = vm.activeTab {
+                    Task {
+                        let success = await github.commitAndPush(
+                            fileName: tab.name,
+                            content: vm.code,
+                            message: msg
+                        )
+                        if success {
+                            vm.aiResponse = github.lastPushMessage ?? "Pushed successfully!"
+                            vm.showAIPanel = true
+                        } else {
+                            vm.aiResponse = github.errorMessage ?? "Push failed"
+                            vm.showAIPanel = true
+                        }
+                    }
+                }
+                commitMessage = ""
+            }
+            Button("Cancel", role: .cancel) { commitMessage = "" }
+        } message: {
+            Text("Push '\(vm.activeTab?.name ?? "file")' to \(github.selectedRepo?.name ?? "repo")")
+        }
     }
 }

@@ -121,9 +121,16 @@ struct FloatModifier: ViewModifier {
 struct AppSettingsView: View {
     @EnvironmentObject var vm: EditorViewModel
     @EnvironmentObject var github: GitHubService
+    @StateObject private var aiService = AIService()
     @Environment(\.dismiss) private var dismiss
     @State private var tokenInput = ""
     @State private var showTokenEntry = false
+    @State private var aiKeyInput = ""
+    @State private var showAIKeyEntry = false
+    @State private var showCreateRepo = false
+    @State private var newRepoName = ""
+    @State private var newRepoDesc = ""
+    @State private var newRepoPrivate = false
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
@@ -134,6 +141,69 @@ struct AppSettingsView: View {
 
                 ScrollView {
                     VStack(spacing: 24) {
+
+                        // MARK: AI
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("AI ENGINE")
+                                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                .foregroundColor(t.mutedColor)
+                                .tracking(1.5)
+
+                            VStack(spacing: 10) {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "cpu")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(aiService.isConfigured ? .green : t.mutedColor)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(aiService.isConfigured ? "Groq AI Connected" : "AI Not Configured")
+                                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                            .foregroundColor(t.textColor)
+                                        Text(aiService.isConfigured ? "Using llama-3.3-70b" : "Add your free Groq API key")
+                                            .font(.system(size: 10, design: .monospaced))
+                                            .foregroundColor(t.mutedColor)
+                                    }
+                                    Spacer()
+                                    if aiService.isConfigured {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                    }
+                                }
+
+                                Button {
+                                    showAIKeyEntry = true
+                                } label: {
+                                    Text(aiService.isConfigured ? "Change API Key" : "Add Groq API Key")
+                                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                        .foregroundColor(t.accent)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 10)
+                                        .liquidGlass(cornerRadius: 10, tint: t.accent, intensity: 1, borderOpacity: 0.2)
+                                }
+                                .buttonStyle(.plain)
+
+                                Text("Get a free key at console.groq.com\nNo server needed — AI runs from your phone")
+                                    .font(.system(size: 9, design: .monospaced))
+                                    .foregroundColor(t.mutedColor.opacity(0.6))
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(12)
+                            .liquidGlassCard(theme: t, cornerRadius: 14)
+                        }
+                        .alert("Groq API Key", isPresented: $showAIKeyEntry) {
+                            TextField("gsk_xxxxxxxxxxxx", text: $aiKeyInput)
+                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.never)
+                            Button("Save") {
+                                let key = aiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
+                                guard !key.isEmpty else { return }
+                                aiService.apiKey = key
+                                aiKeyInput = ""
+                            }
+                            Button("Cancel", role: .cancel) { aiKeyInput = "" }
+                        } message: {
+                            Text("Enter your Groq API key. Get one free at console.groq.com")
+                        }
+
                         VStack(alignment: .leading, spacing: 12) {
                             Text("APPEARANCE")
                                 .font(.system(size: 10, weight: .bold, design: .monospaced))
@@ -316,20 +386,37 @@ struct AppSettingsView: View {
                                         }
                                     }
 
-                                    Button {
-                                        github.signOut()
-                                    } label: {
-                                        HStack {
-                                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                                            Text("Sign Out")
+                                    HStack(spacing: 10) {
+                                        Button {
+                                            showCreateRepo = true
+                                        } label: {
+                                            HStack {
+                                                Image(systemName: "plus.circle.fill")
+                                                Text("New Repo")
+                                            }
+                                            .font(.system(size: 12, design: .monospaced))
+                                            .foregroundColor(t.accent)
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 10)
+                                            .liquidGlass(cornerRadius: 10, tint: t.accent, intensity: 1, borderOpacity: 0.2)
                                         }
-                                        .font(.system(size: 12, design: .monospaced))
-                                        .foregroundColor(.red.opacity(0.8))
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 10)
-                                        .liquidGlass(cornerRadius: 10, tint: .red, intensity: 0.5, borderOpacity: 0.15)
+                                        .buttonStyle(.plain)
+
+                                        Button {
+                                            github.signOut()
+                                        } label: {
+                                            HStack {
+                                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                                                Text("Sign Out")
+                                            }
+                                            .font(.system(size: 12, design: .monospaced))
+                                            .foregroundColor(.red.opacity(0.8))
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 10)
+                                            .liquidGlass(cornerRadius: 10, tint: .red, intensity: 0.5, borderOpacity: 0.15)
+                                        }
+                                        .buttonStyle(.plain)
                                     }
-                                    .buttonStyle(.plain)
                                 }
                             } else {
                                 VStack(spacing: 12) {
@@ -384,6 +471,31 @@ struct AppSettingsView: View {
                             Button("Cancel", role: .cancel) { tokenInput = "" }
                         } message: {
                             Text("Enter a GitHub Personal Access Token with 'repo' scope. Generate one at github.com/settings/tokens")
+                        }
+                        .alert("Create Repository", isPresented: $showCreateRepo) {
+                            TextField("repo-name", text: $newRepoName)
+                                .autocorrectionDisabled()
+                                .textInputAutocapitalization(.never)
+                            TextField("Description (optional)", text: $newRepoDesc)
+                            Button("Create") {
+                                let name = newRepoName.trimmingCharacters(in: .whitespacesAndNewlines)
+                                guard !name.isEmpty else { return }
+                                Task {
+                                    let _ = await github.createRepo(
+                                        name: name,
+                                        description: newRepoDesc,
+                                        isPrivate: false
+                                    )
+                                }
+                                newRepoName = ""
+                                newRepoDesc = ""
+                            }
+                            Button("Cancel", role: .cancel) {
+                                newRepoName = ""
+                                newRepoDesc = ""
+                            }
+                        } message: {
+                            Text("Create a new public GitHub repository")
                         }
 
                         VStack(alignment: .leading, spacing: 8) {

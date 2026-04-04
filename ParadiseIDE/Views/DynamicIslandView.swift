@@ -1,25 +1,6 @@
 import SwiftUI
 import ActivityKit
 
-// MARK: - Paradise IDE Live Activity Attributes
-
-@available(iOS 16.2, *)
-struct ParadiseIDEAttributes: ActivityAttributes {
-    public struct ContentState: Codable, Hashable {
-        var fileName: String
-        var lineCount: Int
-        var language: String
-        var status: String
-        var buildProgress: Double
-        var aiActive: Bool
-        var themeName: String
-        var tabCount: Int
-        var lastAction: String
-    }
-
-    var projectName: String
-}
-
 // MARK: - Dynamic Island Manager
 
 @MainActor
@@ -28,14 +9,25 @@ final class DynamicIslandManager: ObservableObject {
 
     @Published var isLiveActivityRunning = false
 
-    func startLiveActivity(projectName: String) {
+    func startLiveActivity(fileName: String, lineCount: Int, language: String, tabCount: Int) {
         guard #available(iOS 16.2, *) else { return }
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
 
-        let attributes = ParadiseIDEAttributes(projectName: projectName)
+        for activity in Activity<ParadiseIDEAttributes>.activities {
+            Task { await activity.end(nil, dismissalPolicy: .immediate) }
+        }
+
+        let attributes = ParadiseIDEAttributes(projectName: "Paradise IDE")
         let state = ParadiseIDEAttributes.ContentState(
-            fileName: "", lineCount: 0, language: "", status: "Ready",
-            buildProgress: 0, aiActive: false, themeName: "", tabCount: 0, lastAction: "Idle"
+            fileName: fileName,
+            lineCount: lineCount,
+            language: language,
+            status: "Coding",
+            buildProgress: 0,
+            aiActive: false,
+            themeName: "",
+            tabCount: tabCount,
+            lastAction: "Editing \(fileName)"
         )
 
         do {
@@ -47,6 +39,28 @@ final class DynamicIslandManager: ObservableObject {
             isLiveActivityRunning = true
         } catch {
             print("Paradise: Failed to start live activity: \(error)")
+        }
+    }
+
+    func updateLiveActivity(fileName: String, lineCount: Int, language: String, status: String, tabCount: Int, aiActive: Bool) {
+        guard #available(iOS 16.2, *) else { return }
+
+        let state = ParadiseIDEAttributes.ContentState(
+            fileName: fileName,
+            lineCount: lineCount,
+            language: language,
+            status: status,
+            buildProgress: 0,
+            aiActive: aiActive,
+            themeName: "",
+            tabCount: tabCount,
+            lastAction: "\(status) \(fileName)"
+        )
+
+        Task {
+            for activity in Activity<ParadiseIDEAttributes>.activities {
+                await activity.update(.init(state: state, staleDate: nil))
+            }
         }
     }
 

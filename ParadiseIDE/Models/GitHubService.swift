@@ -196,6 +196,94 @@ final class GitHubService: ObservableObject {
         }
     }
 
+    // MARK: - Create Repo
+
+    @Published var lastPushMessage: String?
+
+    func createRepo(name: String, description: String = "", isPrivate: Bool = false) async -> Bool {
+        guard let token = accessToken else { return false }
+
+        let body: [String: Any] = [
+            "name": name,
+            "description": description,
+            "private": isPrivate,
+            "auto_init": true
+        ]
+
+        do {
+            let result: GitHubRepo = try await githubPost("/user/repos", body: body, token: token)
+            repos.insert(result, at: 0)
+            selectRepo(result)
+            lastPushMessage = "Created repo '\(result.name)'"
+            return true
+        } catch {
+            errorMessage = "Failed to create repo: \(error.localizedDescription)"
+            return false
+        }
+    }
+
+    // MARK: - Commit & Push File
+
+    func commitAndPush(fileName: String, content: String, message: String, repo: GitHubRepo? = nil) async -> Bool {
+        guard let token = accessToken else {
+            errorMessage = "Not signed in to GitHub"
+            return false
+        }
+
+        let targetRepo = repo ?? selectedRepo
+        guard let targetRepo = targetRepo else {
+            errorMessage = "No repo selected"
+            return false
+        }
+
+        do {
+            let sha = try await getFileSHA(repo: targetRepo, path: fileName, token: token)
+
+            var body: [String: Any] = [
+                "message": message,
+                "content": Data(content.utf8).base64EncodedString()
+            ]
+            if let sha = sha {
+                body["sha"] = sha
+            }
+
+            let _: [String: Any] = try await githubPutRaw(
+                "/repos/\(targetRepo.fullName)/contents/\(fileName)",
+                body: body,
+                token: token
+            )
+
+            lastPushMessage = "Pushed '\(fileName)' to \(targetRepo.name)"
+            await fetchCommitStats(for: targetRepo)
+            return true
+        } catch {
+            errorMessage = "Push failed: \(error.localizedDescription)"
+            return false
+        }
+    }
+
+    private func getFileSHA(repo: GitHubRepo, path: String, token: String) async throws -> String? {
+        guard let url = URL(string: "https://api.github.com/repos/\(repo.fullName)/contents/\(path)") else {
+            return nil
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse, http.statusCode == 404 {
+                return nil
+            }
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let sha = json["sha"] as? String {
+                return sha
+            }
+        } catch { }
+        return nil
+    }
+
     // MARK: - API Helpers
 
     private func githubGet<T: Decodable>(_ path: String, token: String) async throws -> T {
@@ -234,5 +322,55 @@ final class GitHubService: ObservableObject {
         }
 
         return (try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]) ?? []
+    }
+
+    private func githubPost<T: Decodable>(_ path: String, body: [String: Any], token: String) async throws -> T {
+        guard let url = URL(string: "https://api.github.com\(path)") else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        if let http = response as? HTTPURLResponse, http.statusCode == 401 {
+            signOut()
+            throw URLError(.userAuthenticationRequired)
+        }
+
+        return try JSONDecoder().decode(T.self, from: data)
+    }
+
+    private func githubPutRaw(_ path: String, body: [String: Any], token: String) async throws -> [String: Any] {
+        guard let url = URL(string: "https://api.github.com\(path)") else {
+            throw URLError(.badURL)
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        if let http = response as? HTTPURLResponse {
+            if http.statusCode == 401 {
+                signOut()
+                throw URLError(.userAuthenticationRequired)
+            }
+            if http.statusCode >= 400 {
+                let msg = String(data: data, encoding: .utf8) ?? "Unknown error"
+                throw NSError(domain: "GitHub", code: http.statusCode, userInfo: [NSLocalizedDescriptionKey: msg])
+            }
+        }
+
+        return (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
     }
 }
