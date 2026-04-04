@@ -458,11 +458,15 @@ extension View {
         self
             .font(.system(size: 10, design: .monospaced))
             .foregroundColor(color)
-            .padding(.horizontal, 10).padding(.vertical, 4)
+            .padding(.horizontal, 10).padding(.vertical, 5)
             .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(color.opacity(0.15))
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(color.opacity(0.5), lineWidth: 1))
+                Capsule()
+                    .fill(color.opacity(0.12))
+                    .background(.ultraThinMaterial, in: Capsule())
+            )
+            .overlay(
+                Capsule()
+                    .stroke(color.opacity(0.3), lineWidth: 0.5)
             )
             .buttonStyle(.plain)
     }

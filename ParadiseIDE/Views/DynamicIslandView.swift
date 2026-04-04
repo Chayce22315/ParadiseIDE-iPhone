@@ -1,4 +1,6 @@
 import SwiftUI
+
+#if canImport(ActivityKit)
 import ActivityKit
 
 // MARK: - Paradise IDE Live Activity Attributes
@@ -18,6 +20,7 @@ struct ParadiseIDEAttributes: ActivityAttributes {
 
     var projectName: String
 }
+#endif
 
 // MARK: - Dynamic Island Manager
 
@@ -26,18 +29,19 @@ final class DynamicIslandManager: ObservableObject {
     static let shared = DynamicIslandManager()
 
     @Published var isLiveActivityRunning = false
+
+    #if canImport(ActivityKit)
     private var currentActivity: Activity<ParadiseIDEAttributes>?
 
     func startLiveActivity(projectName: String, state: ParadiseIDEAttributes.ContentState) {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
 
         let attributes = ParadiseIDEAttributes(projectName: projectName)
-        let initialState = state
 
         do {
             let activity = try Activity<ParadiseIDEAttributes>.request(
                 attributes: attributes,
-                content: .init(state: initialState, staleDate: nil),
+                content: .init(state: state, staleDate: nil),
                 pushType: nil
             )
             currentActivity = activity
@@ -63,25 +67,7 @@ final class DynamicIslandManager: ObservableObject {
             isLiveActivityRunning = false
         }
     }
-
-    func buildContentState(from vm: EditorViewModel) -> ParadiseIDEAttributes.ContentState {
-        return ParadiseIDEAttributes.ContentState(
-            fileName: vm.activeTab?.name ?? "No file",
-            lineCount: vm.lineCount,
-            language: vm.activeTab?.language.uppercased() ?? "—",
-            status: vm.petMood == .typing ? "Coding" :
-                    vm.petMood == .ai ? "AI Active" :
-                    vm.petMood == .error ? "Error" :
-                    vm.petMood == .happy ? "Great!" : "Ready",
-            buildProgress: 0,
-            aiActive: vm.showAIPanel,
-            themeName: vm.theme.name,
-            tabCount: vm.tabs.count,
-            lastAction: vm.petMood == .typing ? "Editing \(vm.activeTab?.name ?? "")" :
-                        vm.petMood == .ai ? "AI analyzing code" :
-                        "Idle"
-        )
-    }
+    #endif
 }
 
 // MARK: - In-App Dynamic Island Simulation
@@ -151,6 +137,10 @@ struct DynamicIslandBannerView: View {
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundColor(.white.opacity(0.9))
                     .lineLimit(1)
+            } else {
+                Text("Paradise IDE")
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.7))
             }
 
             Text("\(vm.lineCount)L")
