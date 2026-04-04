@@ -165,7 +165,7 @@ final class EditorViewModel: ObservableObject {
         }
     }
 
-    func saveActiveTab(using folderManager: FolderManager) {
+    @MainActor func saveActiveTab(using folderManager: FolderManager) {
         guard let id = activeTabID,
               let idx = tabs.firstIndex(where: { $0.id == id }) else { return }
         let tab = tabs[idx]

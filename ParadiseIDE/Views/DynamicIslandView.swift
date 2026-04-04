@@ -1,10 +1,9 @@
 import SwiftUI
-
-#if canImport(ActivityKit)
 import ActivityKit
 
 // MARK: - Paradise IDE Live Activity Attributes
 
+@available(iOS 16.2, *)
 struct ParadiseIDEAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var fileName: String
@@ -20,7 +19,6 @@ struct ParadiseIDEAttributes: ActivityAttributes {
 
     var projectName: String
 }
-#endif
 
 // MARK: - Dynamic Island Manager
 
@@ -30,44 +28,37 @@ final class DynamicIslandManager: ObservableObject {
 
     @Published var isLiveActivityRunning = false
 
-    #if canImport(ActivityKit)
-    private var currentActivity: Activity<ParadiseIDEAttributes>?
-
-    func startLiveActivity(projectName: String, state: ParadiseIDEAttributes.ContentState) {
+    func startLiveActivity(projectName: String) {
+        guard #available(iOS 16.2, *) else { return }
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
 
         let attributes = ParadiseIDEAttributes(projectName: projectName)
+        let state = ParadiseIDEAttributes.ContentState(
+            fileName: "", lineCount: 0, language: "", status: "Ready",
+            buildProgress: 0, aiActive: false, themeName: "", tabCount: 0, lastAction: "Idle"
+        )
 
         do {
-            let activity = try Activity<ParadiseIDEAttributes>.request(
+            let _ = try Activity<ParadiseIDEAttributes>.request(
                 attributes: attributes,
                 content: .init(state: state, staleDate: nil),
                 pushType: nil
             )
-            currentActivity = activity
             isLiveActivityRunning = true
         } catch {
             print("Paradise: Failed to start live activity: \(error)")
         }
     }
 
-    func updateLiveActivity(state: ParadiseIDEAttributes.ContentState) {
-        guard let activity = currentActivity else { return }
-        Task {
-            let content = ActivityContent(state: state, staleDate: nil)
-            await activity.update(content)
-        }
-    }
-
     func stopLiveActivity() {
-        guard let activity = currentActivity else { return }
+        guard #available(iOS 16.2, *) else { return }
         Task {
-            await activity.end(nil, dismissalPolicy: .immediate)
-            currentActivity = nil
+            for activity in Activity<ParadiseIDEAttributes>.activities {
+                await activity.end(nil, dismissalPolicy: .immediate)
+            }
             isLiveActivityRunning = false
         }
     }
-    #endif
 }
 
 // MARK: - In-App Dynamic Island Simulation
