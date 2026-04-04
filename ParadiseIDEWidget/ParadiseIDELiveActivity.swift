@@ -5,124 +5,120 @@ import ActivityKit
 struct ParadiseIDELiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: ParadiseIDEAttributes.self) { context in
-            LockScreenView(context: context)
+            // Lock screen / notification banner
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "chevron.left.forwardslash.chevron.right")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.cyan)
+                        Text("Paradise IDE")
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .foregroundColor(.white)
+                    }
+                    Text(context.state.fileName)
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.8))
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("\(context.state.lineCount) lines")
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundColor(.cyan)
+                    Text(context.state.language.uppercased())
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+            }
+            .padding(16)
+            .activityBackgroundTint(.black.opacity(0.9))
+            .activitySystemActionForegroundColor(.cyan)
+
         } dynamicIsland: { context in
             DynamicIsland {
+                // Expanded view
                 DynamicIslandExpandedRegion(.leading) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Label(context.state.fileName, systemImage: "doc.fill")
-                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                            .foregroundColor(.cyan)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(context.state.fileName)
+                            .font(.system(size: 13, weight: .bold, design: .monospaced))
+                            .foregroundColor(.white)
                             .lineLimit(1)
                         Text(context.state.status)
-                            .font(.system(size: 10, design: .monospaced))
-                            .foregroundColor(.white.opacity(0.6))
-                    }
-                }
-                DynamicIslandExpandedRegion(.trailing) {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(context.state.language.uppercased())
-                            .font(.system(size: 9, weight: .bold, design: .monospaced))
+                            .font(.system(size: 11, design: .monospaced))
                             .foregroundColor(.cyan)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(Capsule().fill(.cyan.opacity(0.2)))
-                        Text("\(context.state.tabCount) tabs")
-                            .font(.system(size: 9, design: .monospaced))
-                            .foregroundColor(.white.opacity(0.5))
                     }
+                    .padding(.leading, 4)
                 }
+
+                DynamicIslandExpandedRegion(.trailing) {
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text(context.state.language.uppercased())
+                            .font(.system(size: 10, weight: .black, design: .monospaced))
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Capsule().fill(.cyan))
+                        Text("\(context.state.lineCount)L")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.trailing, 4)
+                }
+
                 DynamicIslandExpandedRegion(.bottom) {
-                    HStack(spacing: 20) {
-                        StatLabel(value: "\(context.state.lineCount)", label: "lines", color: .cyan)
+                    HStack(spacing: 0) {
+                        makeStatBox(icon: "doc.text.fill", value: "\(context.state.lineCount)", label: "LINES")
+                        makeStatBox(icon: "square.on.square.fill", value: "\(context.state.tabCount)", label: "TABS")
                         if context.state.aiActive {
-                            StatLabel(value: "ON", label: "AI", color: .purple)
+                            makeStatBox(icon: "cpu.fill", value: "ON", label: "AI")
                         }
-                        StatLabel(value: context.state.status, label: "status", color: .green)
+                        makeStatBox(icon: "circle.fill", value: context.state.status, label: "STATUS")
                     }
-                    .padding(.top, 4)
+                    .padding(.top, 6)
                 }
+
+                DynamicIslandExpandedRegion(.center) {}
+
             } compactLeading: {
-                Image(systemName: statusIcon(for: context.state.status))
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(statusColor(for: context.state.status))
-            } compactTrailing: {
-                Text("\(context.state.lineCount)L")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .foregroundColor(.cyan)
-            } minimal: {
-                Image(systemName: "chevron.left.forwardslash.chevron.right")
-                    .font(.system(size: 12))
-                    .foregroundColor(.cyan)
-            }
-        }
-    }
-
-    func statusIcon(for status: String) -> String {
-        switch status.lowercased() {
-        case "coding":     return "keyboard"
-        case "background": return "moon.fill"
-        case "paused":     return "pause.circle"
-        default:           return "circle.fill"
-        }
-    }
-
-    func statusColor(for status: String) -> Color {
-        switch status.lowercased() {
-        case "coding":     return .cyan
-        case "background": return .orange
-        case "paused":     return .yellow
-        default:           return .gray
-        }
-    }
-}
-
-struct LockScreenView: View {
-    let context: ActivityViewContext<ParadiseIDEAttributes>
-
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
+                // Compact left side
+                HStack(spacing: 4) {
                     Image(systemName: "chevron.left.forwardslash.chevron.right")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 10, weight: .bold))
                         .foregroundColor(.cyan)
-                    Text("Paradise IDE")
-                        .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                    Text(context.state.fileName.prefix(8))
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
                         .foregroundColor(.white)
+                        .lineLimit(1)
                 }
-                Text(context.state.fileName)
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.7))
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 4) {
-                Text("\(context.state.lineCount) lines")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+
+            } compactTrailing: {
+                // Compact right side
+                Text("\(context.state.lineCount)L")
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
                     .foregroundColor(.cyan)
-                Text(context.state.status)
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(.white.opacity(0.5))
+
+            } minimal: {
+                // Minimal (when another app also has a Live Activity)
+                Image(systemName: "chevron.left.forwardslash.chevron.right")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.cyan)
             }
         }
-        .padding(16)
-        .background(Color.black.opacity(0.8))
     }
-}
 
-struct StatLabel: View {
-    let value: String
-    let label: String
-    let color: Color
-
-    var body: some View {
-        VStack(spacing: 1) {
+    func makeStatBox(icon: String, value: String, label: String) -> some View {
+        VStack(spacing: 2) {
+            Image(systemName: icon)
+                .font(.system(size: 10))
+                .foregroundColor(.cyan)
             Text(value)
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                .foregroundColor(color)
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundColor(.white)
+                .lineLimit(1)
             Text(label)
-                .font(.system(size: 8, design: .monospaced))
-                .foregroundColor(.white.opacity(0.4))
+                .font(.system(size: 7, weight: .bold, design: .monospaced))
+                .foregroundColor(.white.opacity(0.5))
         }
+        .frame(maxWidth: .infinity)
     }
 }
