@@ -56,6 +56,7 @@ targets:
             localhost:
               NSExceptionAllowsInsecureHTTPLoads: true
               NSIncludesSubdomains: false
+        NSSupportsLiveActivities: true
         NSMicrophoneUsageDescription: Used for ambient sound features
         NSLocalNetworkUsageDescription: Paradise IDE connects to your local Python server for terminal execution.
         NSBonjourServices:

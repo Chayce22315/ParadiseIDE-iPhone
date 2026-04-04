@@ -55,6 +55,50 @@ enum IDEEdition: String, CaseIterable {
     }
 }
 
+// MARK: - Coding Session Stats (for Dynamic Island)
+
+struct CodingSessionStats {
+    var startTime: Date = Date()
+    var totalKeystrokes: Int = 0
+    var totalLinesWritten: Int = 0
+    var filesEdited: Set<String> = []
+    var aiSuggestionsReceived: Int = 0
+    var aiSuggestionsApplied: Int = 0
+    var currentStreak: Int = 0
+    var longestStreak: Int = 0
+
+    var sessionDuration: TimeInterval {
+        Date().timeIntervalSince(startTime)
+    }
+
+    var formattedDuration: String {
+        let minutes = Int(sessionDuration) / 60
+        let hours = minutes / 60
+        if hours > 0 {
+            return "\(hours)h \(minutes % 60)m"
+        }
+        return "\(minutes)m"
+    }
+
+    var productivityScore: Int {
+        let lineScore = min(totalLinesWritten * 2, 40)
+        let keystrokeScore = min(totalKeystrokes / 50, 30)
+        let fileScore = min(filesEdited.count * 5, 20)
+        let aiScore = min(aiSuggestionsApplied * 5, 10)
+        return min(lineScore + keystrokeScore + fileScore + aiScore, 100)
+    }
+
+    var productivityEmoji: String {
+        switch productivityScore {
+        case 80...100: return "🔥"
+        case 60..<80:  return "⚡️"
+        case 40..<60:  return "💪"
+        case 20..<40:  return "🌱"
+        default:       return "🌴"
+        }
+    }
+}
+
 // MARK: - EditorViewModel
 
 final class EditorViewModel: ObservableObject {
@@ -91,9 +135,13 @@ final class EditorViewModel: ObservableObject {
     @Published var aiResponse: String = ""
     @Published var showAIPanel: Bool = false
 
-    private var typingWorkItem: DispatchWorkItem?
+    // Dynamic Island / Live Activity
+    @Published var isLiveActivityRunning: Bool = false
+    @Published var sessionStats = CodingSessionStats()
 
-    // Current active tab code
+    private var typingWorkItem: DispatchWorkItem?
+    private var liveActivityUpdateTimer: Timer?
+
     var code: String {
         get { activeTab?.content ?? "" }
         set {
@@ -113,7 +161,6 @@ final class EditorViewModel: ObservableObject {
     // MARK: - Tab management
 
     func openFile(url: URL, content: String, language: String) {
-        // Check if already open
         if let existing = tabs.first(where: { $0.url == url }) {
             activeTabID = existing.id
             return
@@ -129,6 +176,9 @@ final class EditorViewModel: ObservableObject {
         activeTabID = tab.id
         selectedFile = url.lastPathComponent
         lineCount = content.components(separatedBy: "\n").count
+
+        sessionStats.filesEdited.insert(url.lastPathComponent)
+        updateLiveActivity()
     }
 
     func newUntitledTab(language: String = "swift") {
@@ -181,15 +231,27 @@ final class EditorViewModel: ObservableObject {
         AISuggestion(trigger: "for ",   message: "Loop detected. Could .map() be cleaner?", fix: nil),
         AISuggestion(trigger: "var ",   message: "Consider 'let' if value won't change.",   fix: nil),
         AISuggestion(trigger: "async",  message: "Remember await and error handling.",       fix: nil),
-        AISuggestion(trigger: "TODO",   message: "You have a TODO here — want help with it?",fix: nil),
+        AISuggestion(trigger: "TODO",   message: "You have a TODO here -- want help with it?", fix: nil),
     ]
 
     func onCodeChange(_ newValue: String) {
-        lineCount = newValue.components(separatedBy: "\n").count
+        let newLineCount = newValue.components(separatedBy: "\n").count
+        let addedLines = max(0, newLineCount - lineCount)
+        lineCount = newLineCount
         petMood = .typing
 
+        sessionStats.totalKeystrokes += 1
+        sessionStats.totalLinesWritten += addedLines
+        sessionStats.currentStreak += 1
+        if sessionStats.currentStreak > sessionStats.longestStreak {
+            sessionStats.longestStreak = sessionStats.currentStreak
+        }
+
         typingWorkItem?.cancel()
-        let work = DispatchWorkItem { [weak self] in self?.petMood = .idle }
+        let work = DispatchWorkItem { [weak self] in
+            self?.petMood = .idle
+            self?.sessionStats.currentStreak = 0
+        }
         typingWorkItem = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.8, execute: work)
 
@@ -200,26 +262,32 @@ final class EditorViewModel: ObservableObject {
                 return
             }
         }
+
+        updateLiveActivity()
     }
 
     private func triggerAISuggestion(_ suggestion: AISuggestion) {
         currentSuggestion = suggestion
         aiPulsing = true
         petMood = .ai
+        sessionStats.aiSuggestionsReceived += 1
         DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) { [weak self] in
             self?.aiPulsing = false
         }
+        updateLiveActivity()
     }
 
     func applyFix() {
         if let fix = currentSuggestion?.fix {
             code = fix + code
             petMood = .happy
+            sessionStats.aiSuggestionsApplied += 1
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self] in
                 self?.petMood = .idle
             }
         }
         currentSuggestion = nil
+        updateLiveActivity()
     }
 
     func dismissSuggestion() { currentSuggestion = nil }
@@ -239,5 +307,27 @@ final class EditorViewModel: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
             if self?.petMood == .happy { self?.petMood = .idle }
         }
+    }
+
+    // MARK: - Live Activity / Dynamic Island
+
+    func startLiveActivity() {
+        sessionStats = CodingSessionStats()
+        isLiveActivityRunning = true
+        liveActivityUpdateTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+            self?.updateLiveActivity()
+        }
+        updateLiveActivity()
+    }
+
+    func stopLiveActivity() {
+        isLiveActivityRunning = false
+        liveActivityUpdateTimer?.invalidate()
+        liveActivityUpdateTimer = nil
+    }
+
+    func updateLiveActivity() {
+        guard isLiveActivityRunning else { return }
+        objectWillChange.send()
     }
 }

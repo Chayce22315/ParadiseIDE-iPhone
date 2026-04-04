@@ -19,78 +19,86 @@ struct FileTreeView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text(folderManager.rootName.uppercased())
-                    .font(.system(size: 9, design: .monospaced))
-                    .foregroundColor(t.mutedColor)
-                    .tracking(1.5)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("EXPLORER")
+                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .foregroundColor(t.mutedColor)
+                        .tracking(1.5)
+                    Text(folderManager.rootName)
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundColor(t.accent)
+                        .lineLimit(1)
+                }
 
                 Spacer()
 
-                // New file
-                Button {
-                    newItemParent = folderManager.rootURL
-                    showNewFile = true
-                } label: {
-                    Image(systemName: "doc.badge.plus")
-                        .font(.system(size: 12))
-                        .foregroundColor(t.mutedColor)
-                }.buttonStyle(.plain)
+                HStack(spacing: 10) {
+                    Button {
+                        newItemParent = folderManager.rootURL
+                        showNewFile = true
+                    } label: {
+                        Image(systemName: "doc.badge.plus")
+                            .font(.system(size: 13))
+                            .foregroundColor(t.mutedColor)
+                    }.buttonStyle(.plain)
 
-                // New folder
-                Button {
-                    newItemParent = folderManager.rootURL
-                    showNewFolder = true
-                } label: {
-                    Image(systemName: "folder.badge.plus")
-                        .font(.system(size: 12))
-                        .foregroundColor(t.mutedColor)
-                }.buttonStyle(.plain)
+                    Button {
+                        newItemParent = folderManager.rootURL
+                        showNewFolder = true
+                    } label: {
+                        Image(systemName: "folder.badge.plus")
+                            .font(.system(size: 13))
+                            .foregroundColor(t.mutedColor)
+                    }.buttonStyle(.plain)
 
-                // Refresh
-                Button {
-                    folderManager.refresh()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 11))
-                        .foregroundColor(t.mutedColor)
-                }.buttonStyle(.plain)
+                    Button {
+                        folderManager.refresh()
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 12))
+                            .foregroundColor(t.mutedColor)
+                    }.buttonStyle(.plain)
 
-                // Open folder
-                Button {
-                    folderManager.showPicker = true
-                } label: {
-                    Image(systemName: "folder")
-                        .font(.system(size: 12))
-                        .foregroundColor(t.accent)
-                }.buttonStyle(.plain)
+                    Button {
+                        folderManager.showPicker = true
+                    } label: {
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 13))
+                            .foregroundColor(t.accent)
+                    }.buttonStyle(.plain)
+                }
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
 
-            Divider().background(t.surfaceBorder)
+            Rectangle()
+                .fill(t.surfaceBorder.opacity(0.3))
+                .frame(height: 0.5)
 
             if folderManager.rootNode == nil {
-                // No folder open
-                VStack(spacing: 10) {
+                VStack(spacing: 14) {
                     Image(systemName: "folder.badge.questionmark")
-                        .font(.system(size: 32))
-                        .foregroundColor(t.mutedColor.opacity(0.5))
+                        .font(.system(size: 36))
+                        .foregroundColor(t.mutedColor.opacity(0.3))
                     Text("No folder open")
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(.system(size: 12, design: .monospaced))
                         .foregroundColor(t.mutedColor)
                     Button("Open Folder") {
                         folderManager.showPicker = true
                     }
-                    .font(.system(size: 10, design: .monospaced))
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundColor(t.accent)
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(RoundedRectangle(cornerRadius: 8).stroke(t.accent, lineWidth: 1))
+                    .padding(.horizontal, 16).padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(t.accent.opacity(0.12))
+                            .overlay(Capsule().stroke(t.accent.opacity(0.5), lineWidth: 0.5))
+                    )
                     .buttonStyle(.plain)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let root = folderManager.rootNode {
-                ScrollView {
+                ScrollView(showsIndicators: false) {
                     LazyVStack(alignment: .leading, spacing: 0) {
                         if let children = root.children {
                             ForEach(children) { node in
@@ -118,12 +126,15 @@ struct FileTreeView: View {
                             }
                         }
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, 6)
                 }
             }
         }
-        .background(t.surface)
-        .overlay(Rectangle().frame(width: 1).foregroundColor(t.surfaceBorder), alignment: .trailing)
+        .background(
+            t.surface.opacity(0.85)
+                .background(.ultraThinMaterial)
+        )
+        .overlay(Rectangle().fill(t.surfaceBorder.opacity(0.3)).frame(width: 0.5), alignment: .trailing)
         .fullScreenCover(isPresented: $folderManager.showPicker) {
             FolderPicker(
                 onPick: { url in
@@ -201,39 +212,39 @@ struct FileNodeRow: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 4) {
-                // Indent
+            HStack(spacing: 5) {
                 Rectangle()
                     .fill(Color.clear)
-                    .frame(width: CGFloat(depth * 14))
+                    .frame(width: CGFloat(depth * 16))
 
-                // Expand arrow for dirs
                 if node.isDirectory {
                     Image(systemName: node.isExpanded ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 9, weight: .medium))
+                        .font(.system(size: 10, weight: .medium))
                         .foregroundColor(theme.mutedColor)
-                        .frame(width: 12)
+                        .frame(width: 14)
                 } else {
-                    Rectangle().fill(Color.clear).frame(width: 12)
+                    Rectangle().fill(Color.clear).frame(width: 14)
                 }
 
-                // Icon
                 Image(systemName: node.icon)
-                    .font(.system(size: 11))
-                    .foregroundColor(node.isDirectory ? theme.accent.opacity(0.8) : theme.mutedColor)
-                    .frame(width: 16)
+                    .font(.system(size: 12))
+                    .foregroundColor(node.isDirectory ? theme.accent.opacity(0.7) : theme.mutedColor)
+                    .frame(width: 18)
 
-                // Name
                 Text(node.name)
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.system(size: 12, design: .monospaced))
                     .foregroundColor(isActive ? theme.accent : theme.textColor)
                     .lineLimit(1)
 
                 Spacer()
             }
-            .padding(.vertical, 5)
-            .padding(.horizontal, 8)
-            .background(isActive ? theme.accent.opacity(0.12) : Color.clear)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isActive ? theme.accent.opacity(0.10) : Color.clear)
+                    .padding(.horizontal, 4)
+            )
             .contentShape(Rectangle())
             .onTapGesture {
                 if node.isDirectory {
@@ -269,7 +280,6 @@ struct FileNodeRow: View {
                 } label: { Label("Delete", systemImage: "trash") }
             }
 
-            // Children
             if node.isDirectory && node.isExpanded, let children = node.children {
                 ForEach(children) { child in
                     FileNodeRow(

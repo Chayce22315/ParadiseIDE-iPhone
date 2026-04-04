@@ -55,7 +55,7 @@ struct TerminalView: View {
                 .frame(width: 180)
             }
         }
-        .background(Color.black.opacity(0.45))
+        .background(Color.black.opacity(0.35).background(.ultraThinMaterial))
         .onAppear {
             bridge.host = "localhost"
             bridge.port = "8765"
@@ -113,14 +113,14 @@ struct TerminalTopBar: View {
     }
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             Text("TERMINAL")
-                .font(.system(size: 10, design: .monospaced))
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
                 .foregroundColor(theme.mutedColor)
 
             HStack(spacing: 5) {
                 Circle().fill(dotColor).frame(width: 7, height: 7)
-                    .shadow(color: dotColor.opacity(0.9), radius: 5)
+                    .shadow(color: dotColor.opacity(0.8), radius: 4)
                 Text(bridge.state.label)
                     .font(.system(size: 10, design: .monospaced))
                     .foregroundColor(dotColor)
@@ -128,7 +128,7 @@ struct TerminalTopBar: View {
 
             Text("ws://\(bridge.host):\(bridge.port)")
                 .font(.system(size: 9, design: .monospaced))
-                .foregroundColor(theme.mutedColor.opacity(0.6))
+                .foregroundColor(theme.mutedColor.opacity(0.5))
 
             Spacer()
 
@@ -147,20 +147,25 @@ struct TerminalTopBar: View {
                 bridge.buffer.clear()
             } label: {
                 Image(systemName: "trash")
-                    .font(.system(size: 12))
+                    .font(.system(size: 13))
                     .foregroundColor(theme.mutedColor)
             }.buttonStyle(.plain)
 
             Button { showSettings = true } label: {
                 Image(systemName: "gearshape")
-                    .font(.system(size: 12))
+                    .font(.system(size: 13))
                     .foregroundColor(theme.mutedColor)
             }.buttonStyle(.plain)
         }
-        .padding(.horizontal, 12)
-        .frame(height: 36)
-        .background(Color.black.opacity(0.5))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(theme.surfaceBorder), alignment: .bottom)
+        .padding(.horizontal, 16)
+        .frame(height: 40)
+        .background(Color.black.opacity(0.4).background(.ultraThinMaterial))
+        .overlay(
+            Rectangle()
+                .fill(theme.surfaceBorder.opacity(0.3))
+                .frame(height: 0.5),
+            alignment: .bottom
+        )
     }
 }
 
@@ -173,24 +178,24 @@ struct OutputScrollView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 1) {
+                LazyVStack(alignment: .leading, spacing: 2) {
                     ForEach(bridge.buffer.lines) { line in
                         ANSITextView(line.raw, defaultColor: line.defaultColor)
                             .id(line.id)
-                            .padding(.horizontal, 12)
+                            .padding(.horizontal, 14)
                     }
                     if bridge.buffer.isRunning {
-                        HStack(spacing: 6) {
+                        HStack(spacing: 8) {
                             ProgressView().scaleEffect(0.5).tint(theme.accent)
                             Text("running...")
-                                .font(.system(size: 10, design: .monospaced))
+                                .font(.system(size: 11, design: .monospaced))
                                 .foregroundColor(theme.mutedColor)
                         }
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, 14)
                         .id("spinner")
                     }
                 }
-                .padding(.vertical, 10)
+                .padding(.vertical, 12)
             }
             .onChange(of: bridge.buffer.lines.count) { _ in
                 if let last = bridge.buffer.lines.last {
@@ -198,7 +203,7 @@ struct OutputScrollView: View {
                 }
             }
         }
-        .background(Color.black.opacity(0.3))
+        .background(Color.black.opacity(0.25))
     }
 }
 
@@ -214,10 +219,10 @@ struct AutocompleteDropdown: View {
             ForEach(engine.suggestions, id: \.self) { suggestion in
                 Button { onSelect(suggestion) } label: {
                     Text(suggestion)
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(.system(size: 12, design: .monospaced))
                         .foregroundColor(theme.textColor)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 14).padding(.vertical, 6)
+                        .padding(.horizontal, 16).padding(.vertical, 8)
                 }
                 .buttonStyle(.plain)
                 .background(Color.white.opacity(0.03))
@@ -227,11 +232,12 @@ struct AutocompleteDropdown: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.black.opacity(0.8))
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(theme.surfaceBorder, lineWidth: 1))
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.black.opacity(0.75))
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(theme.surfaceBorder.opacity(0.5), lineWidth: 0.5))
         )
-        .padding(.horizontal, 12).padding(.bottom, 2)
+        .padding(.horizontal, 14).padding(.bottom, 4)
         .transition(.opacity.combined(with: .move(edge: .bottom)))
         .animation(.easeOut(duration: 0.15), value: engine.suggestions)
     }
@@ -249,13 +255,13 @@ struct InputBar: View {
     let onSubmit: (String) -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Text(">")
-                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
                 .foregroundColor(theme.accent)
 
-            TextField("", text: $input)
-                .font(.system(size: 12, design: .monospaced))
+            TextField("Enter command...", text: $input)
+                .font(.system(size: 13, design: .monospaced))
                 .foregroundColor(theme.textColor)
                 .tint(theme.accent)
                 .focused(isFocused)
@@ -264,35 +270,37 @@ struct InputBar: View {
                 .onChange(of: input) { autocomplete.update(input: $0) }
                 .onSubmit { onSubmit(input) }
 
-            Button {
-                input = history.up(current: input)
-                autocomplete.update(input: input)
-            } label: {
-                Image(systemName: "chevron.up")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(theme.mutedColor)
-            }.buttonStyle(.plain)
+            HStack(spacing: 6) {
+                Button {
+                    input = history.up(current: input)
+                    autocomplete.update(input: input)
+                } label: {
+                    Image(systemName: "chevron.up")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(theme.mutedColor)
+                }.buttonStyle(.plain)
 
-            Button {
-                input = history.down()
-                autocomplete.update(input: input)
-            } label: {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(theme.mutedColor)
-            }.buttonStyle(.plain)
+                Button {
+                    input = history.down()
+                    autocomplete.update(input: input)
+                } label: {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(theme.mutedColor)
+                }.buttonStyle(.plain)
+            }
 
             Button { onSubmit(input) } label: {
                 Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 20))
+                    .font(.system(size: 22))
                     .foregroundColor(input.isEmpty ? theme.mutedColor.opacity(0.3) : theme.accent)
             }
             .buttonStyle(.plain)
             .disabled(input.isEmpty || !bridge.state.isConnected)
         }
-        .padding(.horizontal, 12).padding(.vertical, 8)
-        .background(Color.black.opacity(0.55))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(theme.surfaceBorder), alignment: .top)
+        .padding(.horizontal, 16).padding(.vertical, 10)
+        .background(Color.black.opacity(0.45).background(.ultraThinMaterial))
+        .overlay(Rectangle().fill(theme.surfaceBorder.opacity(0.3)).frame(height: 0.5), alignment: .top)
         .onTapGesture { isFocused.wrappedValue = true }
     }
 }
@@ -308,47 +316,50 @@ struct WorkspacePanel: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("WORKSPACE")
-                    .font(.system(size: 9, design: .monospaced))
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundColor(theme.mutedColor)
                 Spacer()
                 Button { bridge.send(command: "files") } label: {
                     Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 11))
+                        .font(.system(size: 12))
                         .foregroundColor(theme.mutedColor)
                 }.buttonStyle(.plain)
             }
-            .padding(.horizontal, 10).padding(.vertical, 8)
+            .padding(.horizontal, 12).padding(.vertical, 10)
 
-            Divider().background(theme.surfaceBorder)
+            Divider().background(theme.surfaceBorder.opacity(0.3))
 
             if bridge.workspaceFiles.isEmpty {
-                VStack(spacing: 8) {
+                VStack(spacing: 10) {
+                    Image(systemName: "tray")
+                        .font(.system(size: 22))
+                        .foregroundColor(theme.mutedColor.opacity(0.3))
                     Text("No files yet")
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(.system(size: 11, design: .monospaced))
                         .foregroundColor(theme.mutedColor)
                     Text("download <url>\nor run a script")
                         .font(.system(size: 9, design: .monospaced))
-                        .foregroundColor(theme.mutedColor.opacity(0.6))
+                        .foregroundColor(theme.mutedColor.opacity(0.5))
                         .multilineTextAlignment(.center)
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 3) {
+                    LazyVStack(alignment: .leading, spacing: 4) {
                         ForEach(bridge.workspaceFiles) { file in
                             WorkspaceFileRow(file: file, theme: theme) { onFileTap(file) }
                         }
-                    }.padding(8)
+                    }.padding(10)
                 }
             }
 
-            Divider().background(theme.surfaceBorder)
-            Text("ID: \(String(bridge.sessionID.prefix(8)))...")
-                .font(.system(size: 8, design: .monospaced))
-                .foregroundColor(theme.mutedColor.opacity(0.4))
-                .padding(8)
+            Divider().background(theme.surfaceBorder.opacity(0.3))
+            Text("Session: \(String(bridge.sessionID.prefix(8)))...")
+                .font(.system(size: 9, design: .monospaced))
+                .foregroundColor(theme.mutedColor.opacity(0.3))
+                .padding(10)
         }
-        .background(Color.black.opacity(0.3))
-        .overlay(Rectangle().frame(width: 1).foregroundColor(theme.surfaceBorder), alignment: .leading)
+        .background(Color.black.opacity(0.2).background(.ultraThinMaterial))
+        .overlay(Rectangle().fill(theme.surfaceBorder.opacity(0.3)).frame(width: 0.5), alignment: .leading)
     }
 }
 
@@ -360,24 +371,26 @@ struct WorkspaceFileRow: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 Text(file.icon)
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(theme.mutedColor)
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(file.name)
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(.system(size: 11, design: .monospaced))
                         .foregroundColor(theme.textColor)
                         .lineLimit(1)
                     Text(file.sizeLabel)
-                        .font(.system(size: 8, design: .monospaced))
+                        .font(.system(size: 9, design: .monospaced))
                         .foregroundColor(theme.mutedColor)
                 }
                 Spacer()
             }
-            .padding(.horizontal, 8).padding(.vertical, 6)
-            .background(pressed ? theme.accent.opacity(0.15) : Color.white.opacity(0.03))
-            .cornerRadius(6)
+            .padding(.horizontal, 10).padding(.vertical, 7)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(pressed ? theme.accent.opacity(0.12) : Color.white.opacity(0.02))
+            )
         }
         .buttonStyle(.plain)
         ._onButtonGesture(pressing: { pressed = $0 }, perform: {})
@@ -430,7 +443,7 @@ struct TerminalSettingsSheet: View {
                                 bridge.send(command: cmd)
                                 dismiss()
                             }
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(.system(size: 13, design: .monospaced))
                             .foregroundColor(theme.textColor)
                         }
                     }
@@ -453,13 +466,13 @@ struct TerminalSettingsSheet: View {
 extension View {
     func termBarButton(color: Color) -> some View {
         self
-            .font(.system(size: 10, design: .monospaced))
+            .font(.system(size: 11, design: .monospaced))
             .foregroundColor(color)
-            .padding(.horizontal, 10).padding(.vertical, 4)
+            .padding(.horizontal, 12).padding(.vertical, 5)
             .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(color.opacity(0.15))
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(color.opacity(0.5), lineWidth: 1))
+                Capsule()
+                    .fill(color.opacity(0.12))
+                    .overlay(Capsule().stroke(color.opacity(0.4), lineWidth: 0.5))
             )
             .buttonStyle(.plain)
     }
