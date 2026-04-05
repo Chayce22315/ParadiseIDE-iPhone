@@ -22,9 +22,6 @@ struct ContentView: View {
                 if !vm.performanceMode { ParticleLayerView().ignoresSafeArea() }
 
                 VStack(spacing: 0) {
-                    DynamicIslandBannerView()
-                        .padding(.top, isLargePhone ? 4 : 2)
-
                     TopBarView(sidebarVisible: $sidebarVisible, terminalVisible: $terminalVisible)
 
                     HStack(spacing: 0) {
