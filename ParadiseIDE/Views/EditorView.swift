@@ -455,7 +455,7 @@ struct EditorToolbarView: View {
     @EnvironmentObject var vm: EditorViewModel
     @EnvironmentObject var folderManager: FolderManager
     @EnvironmentObject var github: GitHubService
-    @StateObject private var aiService = AIService()
+    @ObservedObject private var aiService = AIService.shared
     @State private var showCommitAlert = false
     @State private var commitMessage = ""
     @State private var showWebPreview = false

@@ -16,16 +16,16 @@ struct ParadiseIDELiveActivity: Widget {
                             .font(.system(size: 14, weight: .bold, design: .monospaced))
                             .foregroundColor(.white)
                     }
-                    Text(context.state.fileName)
+                    Text(context.state.fileName.isEmpty ? "Paradise IDE" : context.state.fileName)
                         .font(.system(size: 12, design: .monospaced))
                         .foregroundColor(.white.opacity(0.8))
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("\(context.state.lineCount) lines")
+                    Text("\(max(context.state.lineCount, 1)) lines")
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                         .foregroundColor(.cyan)
-                    Text(context.state.language.uppercased())
+                    Text(context.state.language.isEmpty ? "SWIFT" : context.state.language.uppercased())
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
                         .foregroundColor(.white.opacity(0.7))
                 }
@@ -40,7 +40,6 @@ struct ParadiseIDELiveActivity: Widget {
 
                 DynamicIslandExpandedRegion(.leading) {
                     VStack(alignment: .leading, spacing: 6) {
-                        // App branding
                         HStack(spacing: 5) {
                             Image(systemName: "chevron.left.forwardslash.chevron.right")
                                 .font(.system(size: 9, weight: .bold))
@@ -51,12 +50,11 @@ struct ParadiseIDELiveActivity: Widget {
                                 .tracking(1.5)
                         }
 
-                        // Current file
                         HStack(spacing: 5) {
                             Image(systemName: "doc.fill")
                                 .font(.system(size: 11))
                                 .foregroundColor(.cyan)
-                            Text(context.state.fileName)
+                            Text(displayName(context.state.fileName))
                                 .font(.system(size: 14, weight: .bold, design: .monospaced))
                                 .foregroundColor(.white)
                                 .lineLimit(1)
@@ -67,8 +65,7 @@ struct ParadiseIDELiveActivity: Widget {
 
                 DynamicIslandExpandedRegion(.trailing) {
                     VStack(alignment: .trailing, spacing: 6) {
-                        // Language badge
-                        Text(context.state.language.uppercased())
+                        Text(displayLang(context.state.language))
                             .font(.system(size: 9, weight: .black, design: .monospaced))
                             .foregroundColor(.black)
                             .padding(.horizontal, 8)
@@ -146,20 +143,18 @@ struct ParadiseIDELiveActivity: Widget {
                 }
 
             } compactLeading: {
-                // ======== COMPACT LEFT ========
                 HStack(spacing: 4) {
                     Image(systemName: "chevron.left.forwardslash.chevron.right")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(.cyan)
-                    Text(context.state.fileName.prefix(8))
+                    Text(displayName(context.state.fileName).prefix(8))
                         .font(.system(size: 11, weight: .semibold, design: .monospaced))
                         .foregroundColor(.white)
                         .lineLimit(1)
                 }
 
             } compactTrailing: {
-                // ======== COMPACT RIGHT ========
-                Text("\(context.state.lineCount)L")
+                Text("\(max(context.state.lineCount, 1))L")
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
                     .foregroundColor(.cyan)
 
@@ -196,6 +191,15 @@ struct ParadiseIDELiveActivity: Widget {
                 .tracking(0.5)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    func displayName(_ name: String) -> String {
+        name.isEmpty ? "Paradise IDE" : name
+    }
+
+    func displayLang(_ lang: String) -> String {
+        let l = lang.trimmingCharacters(in: .whitespaces)
+        return l.isEmpty ? "SWIFT" : l.uppercased()
     }
 
     func statusIcon(for status: String) -> String {

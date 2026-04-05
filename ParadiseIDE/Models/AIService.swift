@@ -2,10 +2,11 @@ import Foundation
 
 // MARK: - AIService
 // Calls Groq API directly from the device. No server needed.
-// User provides their own API key in Settings.
+// Singleton so the API key persists across all views.
 
 @MainActor
 final class AIService: ObservableObject {
+    static let shared = AIService()
 
     @Published var isLoading: Bool = false
     @Published var isConfigured: Bool = false
@@ -17,15 +18,22 @@ final class AIService: ObservableObject {
         get { UserDefaults.standard.string(forKey: "paradise.groq.apikey") ?? "" }
         set {
             UserDefaults.standard.set(newValue, forKey: "paradise.groq.apikey")
+            UserDefaults.standard.synchronize()
             isConfigured = !newValue.isEmpty
         }
     }
 
     init() {
-        isConfigured = !apiKey.isEmpty
+        refreshConfigured()
+    }
+
+    func refreshConfigured() {
+        let key = UserDefaults.standard.string(forKey: "paradise.groq.apikey") ?? ""
+        isConfigured = !key.isEmpty
     }
 
     func complete(prompt: String, context: String = "", maxTokens: Int = 1024) async -> String {
+        refreshConfigured()
         let systemMsg = "You are a helpful coding assistant inside Paradise IDE, a mobile code editor. Be concise and practical."
         var userMsg = prompt
         if !context.isEmpty {
@@ -35,6 +43,7 @@ final class AIService: ObservableObject {
     }
 
     func explainError(_ error: String, code: String = "") async -> String {
+        refreshConfigured()
         let system = "You are a coding assistant. Explain this error simply and suggest a fix. Be concise."
         var user = "Error: \(error)"
         if !code.isEmpty { user += "\n\nCode:\n```\n\(code.prefix(2000))\n```" }
@@ -42,6 +51,7 @@ final class AIService: ObservableObject {
     }
 
     func fixCode(_ code: String, problem: String = "") async -> String {
+        refreshConfigured()
         let system = "You are a coding assistant. Fix the bugs in this code. Return the corrected code with brief explanation."
         var user = "Fix this code:"
         if !problem.isEmpty { user += "\nProblem: \(problem)" }
@@ -50,6 +60,7 @@ final class AIService: ObservableObject {
     }
 
     func explainCode(_ code: String) async -> String {
+        refreshConfigured()
         let system = "You are a coding assistant. Explain what this code does in simple terms. Be concise."
         let user = "Explain this code:\n\n```\n\(code.prefix(3000))\n```"
         return await chat(system: system, user: user, maxTokens: 400)
@@ -93,8 +104,8 @@ final class AIService: ObservableObject {
                     return "Rate limited. Wait a moment and try again."
                 }
                 if http.statusCode != 200 {
-                    let body = String(data: data, encoding: .utf8) ?? ""
-                    return "API error \(http.statusCode): \(body.prefix(200))"
+                    let errBody = String(data: data, encoding: .utf8) ?? ""
+                    return "API error \(http.statusCode): \(errBody.prefix(200))"
                 }
             }
 

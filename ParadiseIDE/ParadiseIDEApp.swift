@@ -16,14 +16,16 @@ struct ParadiseIDEApp: App {
                 .preferredColorScheme(.dark)
                 .onAppear {
                     AppIconExporter.generateIfNeeded()
-                    startIsland()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        startIsland()
+                    }
                 }
                 .onChange(of: scenePhase) { phase in
                     switch phase {
                     case .background:
                         updateIsland(status: "Background")
                     case .active:
-                        updateIsland(status: "Coding")
+                        startIsland()
                     case .inactive:
                         updateIsland(status: "Paused")
                     @unknown default:
@@ -41,22 +43,39 @@ struct ParadiseIDEApp: App {
 
     private func startIsland() {
         let manager = DynamicIslandManager.shared
-        manager.startLiveActivity(
-            fileName: editorVM.activeTab?.name ?? "Paradise IDE",
-            lineCount: editorVM.lineCount,
-            language: editorVM.activeTab?.language ?? "swift",
-            tabCount: editorVM.tabs.count
-        )
+        let fileName = editorVM.activeTab?.name ?? "Paradise IDE"
+        let lang = editorVM.activeTab?.language ?? "swift"
+        let lines = max(editorVM.lineCount, 1)
+        let tabs = max(editorVM.tabs.count, 0)
+
+        if manager.isLiveActivityRunning {
+            manager.updateLiveActivity(
+                fileName: fileName,
+                lineCount: lines,
+                language: lang,
+                status: "Coding",
+                tabCount: tabs,
+                aiActive: editorVM.showAIPanel
+            )
+        } else {
+            manager.startLiveActivity(
+                fileName: fileName,
+                lineCount: lines,
+                language: lang,
+                tabCount: tabs
+            )
+        }
     }
 
     private func updateIsland(status: String) {
         let manager = DynamicIslandManager.shared
+        guard manager.isLiveActivityRunning else { return }
         manager.updateLiveActivity(
             fileName: editorVM.activeTab?.name ?? "Paradise IDE",
-            lineCount: editorVM.lineCount,
+            lineCount: max(editorVM.lineCount, 1),
             language: editorVM.activeTab?.language ?? "swift",
             status: status,
-            tabCount: editorVM.tabs.count,
+            tabCount: max(editorVM.tabs.count, 0),
             aiActive: editorVM.showAIPanel
         )
     }

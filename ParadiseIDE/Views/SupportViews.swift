@@ -121,7 +121,7 @@ struct FloatModifier: ViewModifier {
 struct AppSettingsView: View {
     @EnvironmentObject var vm: EditorViewModel
     @EnvironmentObject var github: GitHubService
-    @StateObject private var aiService = AIService()
+    @ObservedObject private var aiService = AIService.shared
     @Environment(\.dismiss) private var dismiss
     @State private var tokenInput = ""
     @State private var showTokenEntry = false

@@ -3,7 +3,7 @@ import SwiftUI
 struct RightPanelView: View {
     @EnvironmentObject var vm: EditorViewModel
     @EnvironmentObject var folderManager: FolderManager
-    @StateObject private var aiService = AIService()
+    @ObservedObject private var aiService = AIService.shared
     var t: ParadiseTheme { vm.theme }
 
     var body: some View {
